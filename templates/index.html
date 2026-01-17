@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+{% block title %}Pencarian Artikel Ilmiah{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- header -->
+         <div class="text-center mb-5">
+            <h1 class="display-4 mb-3">
+                <i class="fas fa-search text-primary"></i>
+                    Pencarian Semantik Artikel Ilmiah
+            </h1>
+            <p class="lead text-muted">
+                Cari artikel ilmiah berbahasa Indonesia
+            </p>
+         </div>
+
+         <!-- search box -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-body p-4">
+                <form id="searchForm">
+                    <div class="input-group input-group-lg">
+                        <input 
+                        type="text"
+                        class="form-control"
+                        id="queryinput"
+                        placeholder="Contoh: Implementasi LLM dalam berbagai studi kasus"
+                        autocomplete="off"
+                        required
+                        >
+                        <button class="btn btn-primary px-4" type="submit" id="searchBtn">
+                            <i class="fas fa-search"></i>Cari
+                        </button>
+                    </div>
+
+                    <!-- option -->
+                     <div class="mt-3">
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" class="form-check-input" type="checkbox" id="generateAnswerCheck" checked>
+                            <label for="generateAnswerCheck" class="form-check-label">
+                                Generate jawaban lengkap
+                            </label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="number" id="topKInput" value="10" min="5" max="20">
+                            <label class="form-check-label" for="topKInput">
+                                Jumlah hasil
+                            </label>
+                        </div>
+                     </div>
+                </form>
+            </div>
+          </div>
+
+          <!-- Loading -->
+        <div id="loadingDiv" class="text-center d-none my-5">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Mencari dan menganalisis artikel...</p>
+        </div>
+
+        <!-- Results Container -->
+        <div id="resultsContainer"></div>
+    </div>
+</div>
+
+<!-- Statistics Modal -->
+<div class="modal fade" id="statsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-bar"></i> Statistik Sistem
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="statsBody">
+                <p class="text-center">
+                    <span class="spinner-border spinner-border-sm"></span> Loading...
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// API endpoint
+const API_URL = '/api/search';
+const STATS_URL = '/api/stats';
+
+// DOM elements
+const searchForm = document.getElementById('searchForm');
+const queryInput = document.getElementById('queryInput');
+const searchBtn = document.getElementById('searchBtn');
+const generateAnswerCheck = document.getElementById('generateAnswerCheck');
+const topKInput = document.getElementById('topKInput');
+const loadingDiv = document.getElementById('loadingDiv');
+const resultsContainer = document.getElementById('resultsContainer');
+const statsLink = document.getElementById('statsLink');
+
+// Search function
+async function performSearch(event) {
+    event.preventDefault();
+    
+    const query = queryInput.value.trim();
+    if (!query) return;
+    
+    // Show loading
+    loadingDiv.classList.remove('d-none');
+    resultsContainer.innerHTML = '';
+    searchBtn.disabled = true;
+    
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                query: query,
+                top_k: parseInt(topKInput.value),
+                generate_answer: generateAnswerCheck.checked
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Search failed');
+        }
+        
+        const data = await response.json();
+        displayResults(data);
+        
+    } catch (error) {
+        resultsContainer.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i>
+                Error: ${error.message}
+            </div>
+        `;
+    } finally {
+        loadingDiv.classList.add('d-none');
+        searchBtn.disabled = false;
+    }
+}
+
+// Display results
+function displayResults(data) {
+    let html = '';
+    
+    // Answer section (if generated)
+    if (data.answer) {
+        html += `
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comment-dots"></i> Jawaban
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="answer-text">${formatAnswer(data.answer)}</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Cited references
+    if (data.cited_references && data.cited_references.length > 0) {
+        html += `
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-book"></i> Referensi Dikutip
+                    </h5>
+                </div>
+                <div class="card-body">
+                    ${formatReferences(data.cited_references, true)}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Additional references
+    if (data.additional_references && data.additional_references.length > 0) {
+        html += `
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt"></i> Dokumen Relevan Lainnya
+                    </h5>
+                </div>
+                <div class="card-body">
+                    ${formatReferences(data.additional_references, false)}
+                </div>
+            </div>
+        `;
+    }
+    
+    // All results (if no answer generated)
+    if (!data.answer && data.results) {
+        html += `
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i> Hasil Pencarian (${data.num_results})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    ${formatReferences(data.results, false)}
+                </div>
+            </div>
+        `;
+    }
+    
+    resultsContainer.innerHTML = html;
+}
+
+// Format answer with citations
+function formatAnswer(answer) {
+    // Make citations clickable
+    return answer.replace(/\[(\d+)\]/g, (match, num) => {
+        return `<a href="#ref-${num}" class="citation-link">[${num}]</a>`;
+    });
+}
+
+// Format references
+function formatReferences(refs, isCited) {
+    return refs.map((ref, index) => {
+        const num = isCited ? index + 1 : '';
+        const badgeClass = isCited ? 'bg-primary' : 'bg-secondary';
+        
+        return `
+            <div class="reference-item mb-3 p-3 border rounded" id="ref-${index + 1}">
+                ${num ? `<span class="badge ${badgeClass} me-2">[${num}]</span>` : ''}
+                <h6 class="mb-2">
+                    <a href="${ref.url}" target="_blank" class="text-decoration-none">
+                        ${ref.judul}
+                    </a>
+                </h6>
+                <p class="text-muted small mb-2">
+                    <i class="fas fa-user"></i> ${ref.author} (${ref.tahun}) •
+                    <i class="fas fa-file-alt"></i> ${ref.section} •
+                    <i class="fas fa-chart-line"></i> Similarity: ${(ref.similarity * 100).toFixed(1)}%
+                </p>
+                <p class="mb-0 text-truncate" style="max-height: 3em;">
+                    ${ref.chunk_text.substring(0, 200)}...
+                </p>
+            </div>
+        `;
+    }).join('');
+}
+
+// Load statistics
+async function loadStatistics() {
+    try {
+        const response = await fetch(STATS_URL);
+        const stats = await response.json();
+        
+        document.getElementById('statsBody').innerHTML = `
+            <table class="table">
+                <tbody>
+                    <tr>
+                       <th>Total Chunks</th>
+                        <td>${stats.total_chunks}</td>
+                    </tr>
+                    <tr>
+                        <th>Total Dokumen</th>
+                        <td>${stats.total_documents}</td>
+                    </tr>
+                    <tr>
+                        <th>Index Size</th>
+                        <td>${stats.index_size}</td>
+                    </tr>
+                    <tr>
+                        <th>Embedding Dimension</th>
+                        <td>${stats.embedding_dimension}</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+    } catch (error) {
+        document.getElementById('statsBody').innerHTML = `
+            <div class="alert alert-danger">Error loading statistics</div>
+        `;
+    }
+}
+// Event listeners
+searchForm.addEventListener('submit', performSearch);
+statsLink.addEventListener('click', (e) => {
+e.preventDefault();
+loadStatistics();
+new bootstrap.Modal(document.getElementById('statsModal')).show();
+});
+// Focus on search input on load
+queryInput.focus();
+</script>
+{% endblock %} 
