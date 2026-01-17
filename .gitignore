@@ -36,3 +36,11 @@ outputs/
 # ======================
 .DS_Store
 Thumbs.db
+
+# ======================
+# DATASET BESAR (WAJIB DIIGNORE)
+# ======================
+data/*.csv
+data/*.parquet
+data/*.jsonl
+data/*.txt
