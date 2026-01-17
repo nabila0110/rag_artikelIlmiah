@@ -18,6 +18,14 @@ sentence_transformers/
 **/tf_model.h5
 
 # ======================
+# Embedding & Vector Store
+# ======================
+*.faiss
+*.npy
+vectorstore/
+embeddings/
+
+# ======================
 # Data hasil proses
 # ======================
 cache/
