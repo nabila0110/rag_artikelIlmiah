@@ -1,0 +1,30 @@
+# ======================
+# Python
+# ======================
+__pycache__/
+*.pyc
+*.pyo
+.env
+.venv
+venv/
+
+# ======================
+# Sentence Transformers / HuggingFace
+# ======================
+models/
+sentence_transformers/
+**/model.safetensors
+**/pytorch_model.bin
+**/tf_model.h5
+
+# ======================
+# Data hasil proses
+# ======================
+cache/
+outputs/
+
+# ======================
+# OS
+# ======================
+.DS_Store
+Thumbs.db
