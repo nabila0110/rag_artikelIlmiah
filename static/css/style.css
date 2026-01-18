@@ -1,0 +1,89 @@
+:root {
+    --primary-color: #4A90E2;
+    --success-color: #4CAF50;
+    --secondary-color: #6c757d;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+}
+
+/* Search box */
+#queryInput {
+    border-radius: 10px 0 0 10px;
+    font-size: 1.1rem;
+}
+
+#searchBtn {
+    border-radius: 0 10px 10px 0;
+    padding: 0.5rem 2rem;
+}
+
+/* Answer text */
+.answer-text {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: #333;
+}
+
+/* Citation links */
+.citation-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    padding: 0 2px;
+}
+
+.citation-link:hover {
+    text-decoration: underline;
+}
+
+/* Reference items */
+.reference-item {
+    transition: all 0.3s ease;
+    background-color: #fff;
+}
+
+.reference-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+    font-weight: 600;
+}
+
+/* Loading animation */
+.spinner-border {
+    animation: spinner-border 1s linear infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2rem;
+    }
+    
+    #queryInput {
+        font-size: 1rem;
+    }
+}
+
+/* Smooth scroll */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Citation highlight on target */
+.reference-item:target {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+}
