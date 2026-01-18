@@ -1,46 +1,52 @@
-# ======================
+# .gitignore
+
 # Python
-# ======================
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Flask
+instance/
+.webassets-cache
+
+# Environment
 .env
 .venv
-venv/
 
-# ======================
-# Sentence Transformers / HuggingFace
-# ======================
-models/
-sentence_transformers/
-**/model.safetensors
-**/pytorch_model.bin
-**/tf_model.h5
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# ======================
-# Embedding & Vector Store
-# ======================
-*.faiss
-*.npy
-vectorstore/
-embeddings/
+# Data (large files)
+data/*.index
+data/*.npy
+models/sentence_transformer_model/
 
-# ======================
-# Data hasil proses
-# ======================
-cache/
-outputs/
+# Logs
+*.log
 
-# ======================
 # OS
-# ======================
 .DS_Store
 Thumbs.db
-
-# ======================
-# DATASET BESAR (WAJIB DIIGNORE)
-# ======================
-data/*.csv
-data/*.parquet
-data/*.jsonl
-data/*.txt
