@@ -1,20 +1,20 @@
 import pandas as pd
 import numpy as np
 import faiss
-from sentence_transformers import SentenceTransformers
+from sentence_transformers import SentenceTransformer
 from pathlib import Path
 import shutil
 def prepare_data():
     #paths
     base_dir = Path(__file__).parent
     data_dir = base_dir / 'data'
-    models_dir = base_dis / 'models'
+    models_dir = base_dir / 'models'
 
     #buat directories
-    data_dir.mkdir(exis_ok=True)
-    models_dir.mkdir(exis_ok=True)
+    data_dir.mkdir(exist_ok=True)
+    models_dir.mkdir(exist_ok=True)
 
-    print('\n[1/5] Checking source files...')
+    print('\n[1/4] Checking source files...')
 
     #Check source files
     source_chunks = 'data_chunk.csv'  
@@ -26,18 +26,13 @@ def prepare_data():
     
     print(f"Found: {source_chunks}")
     
-    #Copy chunks file
-    print("\n[2/5] Copying chunks file...")
-    shutil.copy(source_chunks, data_dir / 'data_chunk.csv')
-    print("Chunks copied")
-    
     #Load chunks
-    print("\n[3/5] Loading chunks...")
+    print("\n[2/4] Loading chunks...")
     chunks_df = pd.read_csv(data_dir / 'data_chunk.csv')
     print(f"Loaded {len(chunks_df)} chunks")
     
     #Create embeddings
-    print("\n[4/5] Creating embeddings...")
+    print("\n[3/4] Creating embeddings...")
     print("This may take a few minutes...")
     
     model_name = 'intfloat/multilingual-e5-base'
@@ -56,7 +51,7 @@ def prepare_data():
     faiss.normalize_L2(embeddings)
     
     #Create FAISS index
-    print("\n[5/5] Creating FAISS index...")
+    print("\n[4/4] Creating FAISS index...")
     dimension = embeddings.shape[1]
     index = faiss.IndexFlatL2(dimension)
     index.add(embeddings.astype('float32'))
@@ -79,11 +74,10 @@ def prepare_data():
     print(f"Saved: {models_dir / 'sentence_transformer_model'}")
     
     #Summary
-    print("\n" + "="*60)
+    print("\n" + "-"*60)
     print("DATA PREPARATION COMPLETE!")
-    print("="*60)
+    print("-"*60)
     print("\nFiles created:")
-    print(f"  - {data_dir / 'data_chunk.csv'}")
     print(f"  - {data_dir / 'faiss_index.index'}")
     print(f"  - {data_dir / 'embeddings.npy'}")
     print(f"  - {models_dir / 'sentence_transformer_model'}")
