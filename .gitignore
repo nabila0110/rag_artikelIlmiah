@@ -1,52 +1,102 @@
 # .gitignore
 
-# Python
+# ============================================
+# PYTHON
+# ============================================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
 env/
 venv/
 ENV/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+.venv
+skripsi/
 
-# Flask
+# ============================================
+# DATA FILES (LARGE FILES!)
+# ============================================
+# Ignore ALL CSV files in data folder
+data/*.csv
+data/*.tsv
+data/*.json
+
+# Ignore FAISS index files (binary, large)
+data/*.index
+data/*.faiss
+
+# Ignore embeddings (numpy arrays, large)
+data/*.npy
+data/*.npz
+
+# Ignore entire data folder except .gitkeep
+data/*
+!data/.gitkeep
+
+# ============================================
+# MODELS (VERY LARGE!)
+# ============================================
+# Ignore all model files
+models/*
+!models/.gitkeep
+
+# Sentence transformer models
+models/sentence_transformer_model/
+
+# ============================================
+# FLASK
+# ============================================
 instance/
 .webassets-cache
+*.db
+*.sqlite
 
-# Environment
+# ============================================
+# ENVIRONMENT & SECRETS
+# ============================================
 .env
-.venv
+.env.local
+.env.*.local
 
+# ============================================
 # IDE
+# ============================================
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# Data (large files)
-data/*.index
-data/*.npy
-models/sentence_transformer_model/
-
-# Logs
-*.log
-
-# OS
 .DS_Store
 Thumbs.db
+
+# ============================================
+# LOGS
+# ============================================
+*.log
+logs/
+
+# ============================================
+# JUPYTER NOTEBOOK
+# ============================================
+.ipynb_checkpoints/
+*.ipynb
+
+# ============================================
+# TEMPORARY FILES
+# ============================================
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# ============================================
+# BUILD & DISTRIBUTION
+# ============================================
+build/
+dist/
+*.egg-info/
