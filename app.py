@@ -64,7 +64,7 @@ def search():
             }), 400
         
         query = data['query'].strip()
-        top_k = min(data.get('top_k', app.config['DEFAULT_TOP_K'])), app.config['MAX_TOP_K']
+        top_k = min(data.get('top_k', app.config['DEFAULT_TOP_K']), app.config['MAX_TOP_K'])
         generate_answer = data.get('generate_answer', False)
 
         if not query:
@@ -119,7 +119,7 @@ def stats():
 def health():
     try:
         retrieval = get_retrieval_system()
-        generation = get_generatioon_system()
+        generation = get_generation_system()
 
         return jsonify({
             'status': 'healthy',

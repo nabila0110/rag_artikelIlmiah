@@ -6,6 +6,10 @@ logger = logging.getLogger(__name__)
 
 class GenerationSystem:
     def __init__(self, model_name='gemma2:9b', temperature=0.3, max_tokens=500):
+        self.model_name = model_name
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        
         self._test_connection()
 
         logger.info(f"Generation system initialized with model: {model_name}")
@@ -58,7 +62,7 @@ class GenerationSystem:
                 f"\n[Sumber {i}] {chunk['judul']} ({chunk['tahun']})\n"
                 f"Penulis: {chunk['author']}\n"
                 f"Section: {chunk['section']}\n"
-                f"{chunk[chunk_text]}\n"
+                f"{chunk['chunk_text']}\n"
             )
 
         return "\n".join(context_parts)

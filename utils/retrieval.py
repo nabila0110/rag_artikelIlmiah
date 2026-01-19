@@ -45,7 +45,7 @@ class RetrievalSystem:
 
     def search(self, query, top_k=30):
         try:
-            query_embedding = self.model.encode([query])
+            query_embedding = self.model.encode([query], normalize_embeddings=True)
             distances, indices = self.index.search(np.array(query_embedding).astype('float32'), top_k)
             
             results = []
@@ -53,14 +53,14 @@ class RetrievalSystem:
                 chunk_info = self.chunks_df.iloc[idx]
 
                 results.append({
-                    'chunk_id': chunk_info['chunk_idx'],
+                    'chunk_id': chunk_info.get('chunk_idx', f'chunk_{idx}'),
                     'chunk_text': chunk_info['chunk_text'],
                     'judul': chunk_info['judul'],
-                    'author': chunk_info['first_author', 'unknown'],
-                    'tahun': chunk_info['tahun_terbit', 'N/A'],
-                    'url': chunk_info['url', '#'],
-                    'section': chunk_info['chunk_section', 'unknown'],
-                    'similarity_score': float(1/(1+dist))
+                    'author': chunk_info.get('first_author', 'unknown'),
+                    'tahun': chunk_info.get('tahun_terbit', 'N/A'),
+                    'url': chunk_info.get('url', '#'),
+                    'section': chunk_info.get('chunk_section', 'unknown'),
+                    'similarity_score': 1 - (dist ** 2) / 2 
                 })
 
             logger.info(f"Retrieved {len(results)} results for query: '{query}'")
@@ -74,7 +74,7 @@ class RetrievalSystem:
         return {
             'total_chunks': len(self.chunks_df),
             'total_documents': self.chunks_df['judul'].nunique(),
-            'index+size': self.index.ntotal,
+            'index_size': self.index.ntotal,
             'embedding_dimension': self.index.d
         }   
 
