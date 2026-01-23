@@ -12,6 +12,7 @@ class RetrievalSystem:
         self.chunks_df = None
         self.index = None
         self.model = None
+        self.index_type = None
 
         self._load_data(chunks_file)
         self._load_index(faiss_index_file)
@@ -30,7 +31,17 @@ class RetrievalSystem:
     def _load_index(self, faiss_index_file):
         try:
             self.index = faiss.read_index(str(faiss_index_file))
-            logger.info(f"loaded faiss index with {self.index.ntotal} vectors")
+            index_description = str(type(self.index))
+            if 'IndexFlatL2' in index_description or 'L2' in index_description:
+                self.index_type = 'L2'
+                logger.info(f"Loaded FAISS IndexFlatL2 with {self.index.ntotal} vectors")
+            elif 'IndexFlatIP' in index_description or 'IP' in index_description:
+                self.index_type = 'IP'
+                logger.info(f"Loaded FAISS IndexFlatIP with {self.index.ntotal} vectors")
+            else:
+                self.index_type = 'L2'  # Default
+                logger.warning(f"Unknown index type, assuming L2. Index: {index_description}")
+        
         except Exception as e:
             logger.error(f"Error loading FAISS index: {e}")
             raise
@@ -43,6 +54,14 @@ class RetrievalSystem:
             logger.error(f"Error loading embedding model: {e}")
             raise
 
+    def _distance_to_similarity(self, distance):
+        if self.index_type == 'IP':
+            sim = distance  
+        else:
+            sim = 1 - (distance / 2)
+
+        return max(0.0, min(1.0, float(sim)))
+
     def search(self, query, top_k=30):
         try:
             query_embedding = self.model.encode([query], normalize_embeddings=True)
@@ -51,6 +70,7 @@ class RetrievalSystem:
             results = []
             for idx, dist in zip(indices[0], distances[0]):
                 chunk_info = self.chunks_df.iloc[idx]
+                similarity = self._distance_to_similarity(dist)
 
                 results.append({
                     'chunk_id': chunk_info.get('chunk_idx', f'chunk_{idx}'),
@@ -60,7 +80,8 @@ class RetrievalSystem:
                     'tahun': chunk_info.get('tahun_terbit', 'N/A'),
                     'url': chunk_info.get('url', '#'),
                     'section': chunk_info.get('chunk_section', 'unknown'),
-                    'similarity_score': 1 - (dist ** 2) / 2 
+                    'similarity': similarity,
+                    'similarity_score': similarity
                 })
 
             logger.info(f"Retrieved {len(results)} results for query: '{query}'")
