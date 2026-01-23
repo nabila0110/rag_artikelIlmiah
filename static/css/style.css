@@ -257,17 +257,87 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
+    body {
+        padding: 0;
+    }
+    
+    .main-wrapper {
+        padding: 0.25rem 0;
+    }
+    
+    .layout-container {
+        padding: 0.5rem !important;
+    }
+    
+    /* Mobile Hamburger Button */
+    .mobile-filter-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1050;
+        border-radius: 50px;
+        padding: 0.75rem 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        font-weight: 600;
+    }
+    
+    /* Sidebar Overlay */
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+        display: none;
+        transition: opacity 0.3s ease;
+    }
+    
+    .sidebar-overlay.active {
+        display: block;
+    }
+    
+    /* Mobile Sidebar */
+    .sidebar-col {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 85%;
+        max-width: 350px;
+        height: 100vh;
+        background-color: #fff;
+        z-index: 1045;
+        overflow-y: auto;
+        transition: left 0.3s ease;
+        padding: 1rem;
+        margin: 0;
+    }
+    
+    .sidebar-col.sidebar-open {
+        left: 0;
+    }
+    
     .display-4 {
-        font-size: 2rem;
+        font-size: 1.75rem;
+    }
+    
+    .lead {
+        font-size: 1rem;
     }
     
     #queryInput {
-        font-size: 1rem;
+        font-size: 0.95rem;
     }
     
     .filter-card {
         position: static;
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
+        max-height: none;
+    }
+    
+    .right-content-area {
+        padding-left: 0;
     }
     
     .pagination {
@@ -276,6 +346,33 @@ body {
     
     .page-link {
         margin: 0.25rem;
+        padding: 0.4rem 0.6rem;
+        font-size: 0.85rem;
+    }
+    
+    .reference-item {
+        padding: 0.75rem !important;
+    }
+    
+    .reference-item h6 {
+        font-size: 0.95rem;
+    }
+    
+    .reference-item p {
+        font-size: 0.85rem;
+    }
+    
+    #searchBtn {
+        padding: 0.5rem 1rem;
+        font-size: 0.95rem;
+    }
+    
+    .card-header h6 {
+        font-size: 0.9rem;
+    }
+    
+    .filter-section label {
+        font-size: 0.85rem;
     }
 }
 

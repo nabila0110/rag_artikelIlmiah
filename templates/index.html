@@ -5,10 +5,18 @@
 
 {% block content %}
 <div class="container-fluid layout-container">
+    <!-- Mobile Hamburger Button -->
+    <button class="btn btn-primary mobile-filter-btn d-lg-none" id="mobileFilterBtn">
+        <i class="fas fa-bars"></i> Filter & Statistik
+    </button>
+    
+    <!-- Sidebar Overlay (for mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
     <!-- Main Content with Sidebar -->
     <div class="row g-6 align-items-start layout-row">
     <!-- Sidebar Filter -->
-    <div class="col-lg-3 mb-4 sidebar-col">
+    <div class="col-lg-3 mb-4 sidebar-col" id="sidebarCol">
         <div class="card shadow-sm filter-card">
             <div class="card-header bg-primary text-white">
                 <h6 class="mb-0">
@@ -154,6 +162,34 @@
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing...');
+    
+    // Mobile sidebar toggle
+    const mobileFilterBtn = document.getElementById('mobileFilterBtn');
+    const sidebarCol = document.getElementById('sidebarCol');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    
+    if (mobileFilterBtn && sidebarCol && sidebarOverlay) {
+        // Toggle sidebar dengan hamburger button
+        mobileFilterBtn.addEventListener('click', function() {
+            const isOpen = sidebarCol.classList.contains('sidebar-open');
+            if (isOpen) {
+                closeSidebar();
+            } else {
+                sidebarCol.classList.add('sidebar-open');
+                sidebarOverlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        });
+        
+        function closeSidebar() {
+            sidebarCol.classList.remove('sidebar-open');
+            sidebarOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        
+        // Tutup sidebar saat klik overlay
+        sidebarOverlay.addEventListener('click', closeSidebar);
+    }
     
     // API endpoints
     const API_URL = '/api/search';
