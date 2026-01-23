@@ -32,6 +32,7 @@ body {
     min-width: 280px;
     max-width: 330px;
     margin-left: 1.2rem;
+    padding-top: 1rem;
 }
 
 .search-card {
