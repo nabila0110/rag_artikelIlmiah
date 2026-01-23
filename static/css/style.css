@@ -7,17 +7,120 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f8f9fa;
+    margin: 0;
+    padding: 0;
+}
+
+.main-wrapper {
+    max-width: 100%;
+    margin: 0;
+    padding: 0.5rem 0;
+}
+
+.layout-container {
+    max-width: 100%;
+    margin: 0;
+    padding: 1.25rem 2rem;
+}
+
+.layout-row {
+    align-items: flex-start;
+}
+
+/* Layout helpers */
+.sidebar-col {
+    min-width: 280px;
+    max-width: 330px;
+    margin-left: 1.2rem;
+}
+
+.search-card {
+    border: 1px solid #e7e9ec;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+}
+
+.right-content-area {
+    padding-left: 6.5rem;
 }
 
 /* Search box */
 #queryInput {
     border-radius: 10px 0 0 10px;
     font-size: 1.1rem;
+    border: 2px solid #e0e0e0;
+    transition: border-color 0.3s;
+}
+
+#queryInput:focus {
+    border-color: var(--primary-color);
+    box-shadow: none;
 }
 
 #searchBtn {
     border-radius: 0 10px 10px 0;
     padding: 0.5rem 2rem;
+    font-weight: 600;
+}
+
+/* Sidebar Filter */
+.filter-card {
+    border: none;
+    border-radius: 10px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+}
+
+.filter-card::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filter-card::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.filter-card::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.filter-card::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.filter-section {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.filter-section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.filter-section label {
+    color: #333;
+    font-size: 0.95rem;
+    margin-bottom: 0.75rem;
+}
+
+.filter-section .form-check {
+    margin-bottom: 0.5rem;
+}
+
+.filter-section .form-check-label {
+    font-size: 0.9rem;
+    color: #555;
+    cursor: pointer;
+}
+
+.filter-section .form-range {
+    height: 0.5rem;
+}
+
+.filter-section .form-range,
+.filter-section input[type="range"] {
+    accent-color: var(--primary-color);
 }
 
 /* Answer text */
@@ -50,20 +153,106 @@ body {
     transform: translateY(-2px);
 }
 
+.reference-item h6 {
+    color: #333;
+    font-weight: 600;
+}
+
+.reference-item a {
+    color: var(--primary-color);
+}
+
 /* Cards */
 .card {
     border: none;
     border-radius: 10px;
+    overflow: hidden;
 }
 
 .card-header {
     border-radius: 10px 10px 0 0 !important;
     font-weight: 600;
+    padding: 1rem;
+}
+
+/* Statistics Card */
+.stats-item {
+    padding: 0.75rem 0;
+}
+
+.stats-item small {
+    display: block;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+}
+
+.stats-item .h6 {
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+/* Pagination */
+.pagination {
+    margin-top: 2rem;
+    padding: 1.5rem 0;
+    border-top: 1px solid #e0e0e0;
+}
+
+.page-link {
+    color: var(--primary-color);
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 0.5rem 0.75rem;
+    margin: 0 0.25rem;
+    transition: all 0.3s;
+}
+
+.page-link:hover {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.page-item.active .page-link {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.page-item.disabled .page-link {
+    color: #6c757d;
+    cursor: not-allowed;
 }
 
 /* Loading animation */
 .spinner-border {
     animation: spinner-border 1s linear infinite;
+}
+
+/* Header styling */
+.display-4 {
+    font-weight: 700;
+    color: #333;
+}
+
+.lead {
+    font-size: 1.15rem;
+}
+
+/* Form controls */
+.form-control, .form-check-input {
+    border-radius: 5px;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+}
+
+/* Badge styling */
+.badge {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 600;
 }
 
 /* Responsive */
@@ -75,6 +264,19 @@ body {
     #queryInput {
         font-size: 1rem;
     }
+    
+    .filter-card {
+        position: static;
+        margin-bottom: 2rem;
+    }
+    
+    .pagination {
+        flex-wrap: wrap;
+    }
+    
+    .page-link {
+        margin: 0.25rem;
+    }
 }
 
 /* Smooth scroll */
@@ -82,8 +284,13 @@ html {
     scroll-behavior: smooth;
 }
 
-/* Citation highlight on target */
-.reference-item:target {
-    background-color: #fff3cd;
-    border-color: #ffc107;
+/* Alert styling */
+.alert {
+    border-radius: 10px;
+    border: none;
+}
+
+.alert-sm {
+    padding: 0.75rem;
+    font-size: 0.9rem;
 }

@@ -4,10 +4,78 @@
 {% block title %}Pencarian Artikel Ilmiah{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-10">
+<div class="container-fluid layout-container">
+    <!-- Main Content with Sidebar -->
+    <div class="row g-6 align-items-start layout-row">
+    <!-- Sidebar Filter -->
+    <div class="col-lg-3 mb-4 sidebar-col">
+        <div class="card shadow-sm filter-card">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-filter"></i> Filter Hasil
+                </h6>
+            </div>
+            <div class="card-body">
+                <!-- Year Range Filter -->
+                <div class="filter-section mb-4">
+                    <label class="form-label fw-bold">Tahun</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <input type="number" class="form-control form-control-sm" id="yearMin" placeholder="Dari" min="1900" max="2099">
+                        </div>
+                        <div class="col-6">
+                            <input type="number" class="form-control form-control-sm" id="yearMax" placeholder="Sampai" min="1900" max="2099">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Similarity Threshold -->
+                <div class="filter-section mb-4">
+                    <label class="form-label fw-bold">Min. Similarity</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="range" class="form-range" id="similarityThreshold" min="0" max="100" value="0" step="5">
+                        <span class="badge bg-primary" id="similarityValue">0%</span>
+                    </div>
+                </div>
+
+                <!-- Section Filter -->
+                <div class="filter-section mb-4">
+                    <label class="form-label fw-bold">Bagian Dokumen</label>
+                    <div class="form-check">
+                        <input class="form-check-input section-filter" type="checkbox" id="sectionAll" checked>
+                        <label class="form-check-label" for="sectionAll">Semua</label>
+                    </div>
+                    <div id="sectionList" class="mt-2"></div>
+                </div>
+
+                <!-- Reset Button -->
+                <button class="btn btn-outline-secondary w-100" id="resetFiltersBtn">
+                    <i class="fas fa-redo"></i> Reset Filter
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistics Card -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-bar"></i> Statistik
+                </h6>
+            </div>
+            <div class="card-body" id="statsCard">
+                <div class="text-center">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Content Area -->
+    <div class="col-lg-9 right-content-area">
         <!-- Header -->
-        <div class="text-center mb-5">
+        <div class="text-center mb-3 mt-2">
             <h1 class="display-4 mb-3">
                 <i class="fas fa-search text-primary"></i>
                 Pencarian Semantik Artikel Ilmiah
@@ -16,9 +84,9 @@
                 Cari artikel ilmiah berbahasa Indonesia dengan pertanyaan natural
             </p>
         </div>
-        
+
         <!-- Search Box -->
-        <div class="card shadow-sm mb-4">
+        <div class="card shadow-sm mb-4 search-card">
             <div class="card-body p-4">
                 <form id="searchForm">
                     <div class="input-group input-group-lg">
@@ -51,9 +119,9 @@
                             <input class="form-control form-control-sm d-inline-block" 
                                    type="number" 
                                    id="topKInput" 
-                                   value="10" 
+                                   value="30" 
                                    min="5" 
-                                   max="20"
+                                   max="100"
                                    style="width: 70px;">
                         </div>
                     </div>
@@ -71,26 +139,13 @@
         
         <!-- Results Container -->
         <div id="resultsContainer"></div>
+
+        <!-- Pagination -->
+        <nav id="paginationNav" class="mt-4 d-none">
+            <ul class="pagination justify-content-center" id="paginationList"></ul>
+        </nav>
     </div>
 </div>
-
-<!-- Statistics Modal -->
-<div class="modal fade" id="statsModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-chart-bar"></i> Statistik Sistem
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="statsBody">
-                <p class="text-center">
-                    <span class="spinner-border spinner-border-sm"></span> Loading...
-                </p>
-            </div>
-        </div>
-    </div>
 </div>
 {% endblock %}
 
@@ -103,6 +158,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // API endpoints
     const API_URL = '/api/search';
     const STATS_URL = '/api/stats';
+    const ITEMS_PER_PAGE = 15;
+    
+    // State
+    let allResults = [];
+    let currentPage = 1;
+    let filteredResults = [];
+    let lastSearchData = null;
     
     // Get DOM elements
     const searchForm = document.getElementById('searchForm');
@@ -112,7 +174,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const topKInput = document.getElementById('topKInput');
     const loadingDiv = document.getElementById('loadingDiv');
     const resultsContainer = document.getElementById('resultsContainer');
-    const statsLink = document.getElementById('statsLink');
+    const paginationNav = document.getElementById('paginationNav');
+    const paginationList = document.getElementById('paginationList');
+    
+    // Filter elements
+    const yearMinInput = document.getElementById('yearMin');
+    const yearMaxInput = document.getElementById('yearMax');
+    const similarityThreshold = document.getElementById('similarityThreshold');
+    const similarityValue = document.getElementById('similarityValue');
+    const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+    const sectionListDiv = document.getElementById('sectionList');
     
     // Check if elements exist
     if (!searchForm || !queryInput || !searchBtn) {
@@ -122,9 +193,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('All elements found, ready to search');
     
+    // Load initial statistics
+    loadStatistics();
+    
+    // Filter event listeners
+    yearMinInput.addEventListener('change', applyFilters);
+    yearMaxInput.addEventListener('change', applyFilters);
+    similarityThreshold.addEventListener('input', (e) => {
+        similarityValue.textContent = e.target.value + '%';
+        applyFilters();
+    });
+    resetFiltersBtn.addEventListener('click', resetFilters);
+    
     // Search function
     async function performSearch(event) {
         event.preventDefault();
+        currentPage = 1;
         
         const query = queryInput.value.trim();
         console.log('Search initiated:', query);
@@ -137,6 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show loading
         loadingDiv.classList.remove('d-none');
         resultsContainer.innerHTML = '';
+        paginationNav.classList.add('d-none');
         searchBtn.disabled = true;
         searchBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Mencari...';
         
@@ -165,7 +250,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             console.log('Data received:', data);
             
-            displayResults(data);
+            lastSearchData = data;
+            allResults = data.results || [];
+            updateSectionFilter();
+            applyFilters();
             
         } catch (error) {
             console.error('Search error:', error);
@@ -173,7 +261,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="alert alert-danger">
                     <i class="fas fa-exclamation-circle"></i>
                     <strong>Error:</strong> ${error.message}
-                    <br><small>Pastikan Flask server dan Ollama sedang berjalan</small>
                 </div>
             `;
         } finally {
@@ -183,12 +270,54 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Display results
-    function displayResults(data) {
-        let html = '';
+    // Apply filters
+    function applyFilters() {
+        const yearMin = yearMinInput.value ? parseInt(yearMinInput.value) : null;
+        const yearMax = yearMaxInput.value ? parseInt(yearMaxInput.value) : null;
+        const minSimilarity = parseInt(similarityThreshold.value) / 100;
+        const selectedSections = Array.from(document.querySelectorAll('.section-filter:checked:not(#sectionAll)'))
+            .map(cb => cb.value);
         
-        // Answer section
-        if (data.answer) {
+        filteredResults = allResults.filter(result => {
+            const tahun = parseInt(result.tahun) || 0;
+            
+            // Year filter
+            if (yearMin && tahun < yearMin) return false;
+            if (yearMax && tahun > yearMax) return false;
+            
+            // Similarity filter
+            if (result.similarity < minSimilarity) return false;
+            
+            // Section filter
+            if (selectedSections.length > 0 && !selectedSections.includes(result.section)) {
+                return false;
+            }
+            
+            return true;
+        });
+        
+        currentPage = 1;
+        displayPaginatedResults();
+    }
+    
+    // Display paginated results
+    function displayPaginatedResults() {
+        let html = '';
+        const totalPages = Math.ceil(filteredResults.length / ITEMS_PER_PAGE);
+        
+        if (filteredResults.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Tidak ada hasil yang sesuai dengan filter Anda.
+                </div>
+            `;
+            paginationNav.classList.add('d-none');
+            return;
+        }
+        
+        // Answer section (from last search)
+        if (lastSearchData && lastSearchData.answer) {
             html += `
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-success text-white">
@@ -197,61 +326,130 @@ document.addEventListener('DOMContentLoaded', function() {
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="answer-text">${formatAnswer(data.answer)}</div>
+                        <div class="answer-text">${formatAnswer(lastSearchData.answer)}</div>
                     </div>
                 </div>
             `;
         }
         
-        // Cited references
-        if (data.cited_references && data.cited_references.length > 0) {
-            html += `
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-book"></i> Referensi Dikutip
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        ${formatReferences(data.cited_references, true)}
-                    </div>
-                </div>
-            `;
-        }
+        // Results section
+        const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIdx = startIdx + ITEMS_PER_PAGE;
+        const pageResults = filteredResults.slice(startIdx, endIdx);
         
-        // Additional references
-        if (data.additional_references && data.additional_references.length > 0) {
-            html += `
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-file-alt"></i> Dokumen Relevan Lainnya
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        ${formatReferences(data.additional_references, false)}
-                    </div>
+        html += `
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i> Hasil Pencarian (${filteredResults.length})
+                        ${allResults.length !== filteredResults.length ? `<small> (Difilter dari ${allResults.length})</small>` : ''}
+                    </h5>
                 </div>
-            `;
-        }
-        
-        // All results (if no answer)
-        if (!data.answer && data.results) {
-            html += `
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-list"></i> Hasil Pencarian (${data.num_results})
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        ${formatReferences(data.results, false)}
-                    </div>
+                <div class="card-body">
+                    ${formatReferences(pageResults)}
                 </div>
-            `;
-        }
+            </div>
+        `;
         
         resultsContainer.innerHTML = html;
+        
+        // Show pagination if needed
+        if (totalPages > 1) {
+            displayPagination(totalPages);
+            paginationNav.classList.remove('d-none');
+        } else {
+            paginationNav.classList.add('d-none');
+        }
+    }
+    
+    // Display pagination controls
+    function displayPagination(totalPages) {
+        let html = '';
+        
+        // Previous button
+        html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage - 1}">
+                <i class="fas fa-chevron-left"></i> Sebelumnya
+            </a>
+        </li>`;
+        
+        // Page numbers
+        const startPage = Math.max(1, currentPage - 2);
+        const endPage = Math.min(totalPages, currentPage + 2);
+        
+        if (startPage > 1) {
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>`;
+            if (startPage > 2) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link" href="#" data-page="${i}">${i}</a>
+            </li>`;
+        }
+        
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
+        }
+        
+        // Next button
+        html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage + 1}">
+                Berikutnya <i class="fas fa-chevron-right"></i>
+            </a>
+        </li>`;
+        
+        paginationList.innerHTML = html;
+        
+        // Pagination click handlers
+        paginationList.querySelectorAll('a[data-page]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = parseInt(link.dataset.page);
+                if (page >= 1 && page <= totalPages) {
+                    currentPage = page;
+                    displayPaginatedResults();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+        });
+    }
+    
+    // Update section filter options
+    function updateSectionFilter() {
+        const sections = [...new Set(allResults.map(r => r.section))];
+        let html = '';
+        
+        sections.forEach(section => {
+            html += `
+                <div class="form-check">
+                    <input class="form-check-input section-filter" type="checkbox" id="section-${section}" value="${section}">
+                    <label class="form-check-label" for="section-${section}">${section}</label>
+                </div>
+            `;
+        });
+        
+        sectionListDiv.innerHTML = html;
+        
+        // Add event listeners
+        document.querySelectorAll('.section-filter').forEach(cb => {
+            cb.addEventListener('change', () => {
+                document.getElementById('sectionAll').checked = false;
+                applyFilters();
+            });
+        });
+    }
+    
+    // Reset filters
+    function resetFilters() {
+        yearMinInput.value = '';
+        yearMaxInput.value = '';
+        similarityThreshold.value = '0';
+        similarityValue.textContent = '0%';
+        document.getElementById('sectionAll').checked = true;
+        document.querySelectorAll('.section-filter:not(#sectionAll)').forEach(cb => cb.checked = false);
+        applyFilters();
     }
     
     // Format answer
@@ -262,14 +460,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Format references
-    function formatReferences(refs, isCited) {
+    function formatReferences(refs) {
         return refs.map((ref, index) => {
-            const num = isCited ? index + 1 : index + 6;
-            const badgeClass = isCited ? 'bg-primary' : 'bg-secondary';
-            
             return `
-                <div class="reference-item mb-3 p-3 border rounded" id="ref-${num}">
-                    ${isCited ? `<span class="badge ${badgeClass} me-2">[${index + 1}]</span>` : ''}
+                <div class="reference-item mb-3 p-3 border rounded">
                     <h6 class="mb-2">
                         <a href="${ref.url}" target="_blank" class="text-decoration-none">
                             ${ref.judul}
@@ -278,7 +472,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p class="text-muted small mb-2">
                         <i class="fas fa-user"></i> ${ref.author} (${ref.tahun}) •
                         <i class="fas fa-file-alt"></i> ${ref.section} •
-                        <i class="fas fa-chart-line"></i> Similarity: ${(ref.similarity * 100).toFixed(1)}%
+                        <i class="fas fa-chart-line"></i> Similarity: <span>${(ref.similarity * 100).toFixed(1)}%</span>
                     </p>
                     <p class="mb-0" style="max-height: 4em; overflow: hidden;">
                         ${ref.chunk_text.substring(0, 200)}...
@@ -294,48 +488,34 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(STATS_URL);
             const stats = await response.json();
             
-            document.getElementById('statsBody').innerHTML = `
-                <table class="table">
-                    <tbody>
-                        <tr>
-                            <th>Total Chunks</th>
-                            <td>${stats.total_chunks}</td>
-                        </tr>
-                        <tr>
-                            <th>Total Dokumen</th>
-                            <td>${stats.total_documents}</td>
-                        </tr>
-                        <tr>
-                            <th>Index Size</th>
-                            <td>${stats.index_size}</td>
-                        </tr>
-                        <tr>
-                            <th>Embedding Dimension</th>
-                            <td>${stats.embedding_dimension}</td>
-                        </tr>
-                    </tbody>
-                </table>
+            document.getElementById('statsCard').innerHTML = `
+                <div class="stats-item mb-3">
+                    <small class="text-muted">Total Chunks</small>
+                    <div class="h6 mb-0">${stats.total_chunks.toLocaleString()}</div>
+                </div>
+                <div class="stats-item mb-3">
+                    <small class="text-muted">Total Dokumen</small>
+                    <div class="h6 mb-0">${stats.total_documents}</div>
+                </div>
+                <div class="stats-item mb-3">
+                    <small class="text-muted">Index Size</small>
+                    <div class="h6 mb-0">${stats.index_size.toLocaleString()}</div>
+                </div>
+                <div class="stats-item">
+                    <small class="text-muted">Dimensi Embedding</small>
+                    <div class="h6 mb-0">${stats.embedding_dimension}</div>
+                </div>
             `;
         } catch (error) {
-            document.getElementById('statsBody').innerHTML = `
-                <div class="alert alert-danger">Error loading statistics</div>
+            console.error('Error loading stats:', error);
+            document.getElementById('statsCard').innerHTML = `
+                <div class="alert alert-warning alert-sm">Tidak dapat memuat statistik</div>
             `;
         }
     }
     
     // Event listeners
     searchForm.addEventListener('submit', performSearch);
-    
-    if (statsLink) {
-        statsLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            loadStatistics();
-            const modal = new bootstrap.Modal(document.getElementById('statsModal'));
-            modal.show();
-        });
-    }
-    
-    // Focus on search input
     queryInput.focus();
     
     console.log('Event listeners attached successfully');
