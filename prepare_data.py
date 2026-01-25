@@ -53,7 +53,7 @@ def prepare_data():
     #Create FAISS index
     print("\n[4/4] Creating FAISS index...")
     dimension = embeddings.shape[1]
-    index = faiss.IndexFlatL2(dimension)
+    index = faiss.IndexFlatIP(dimension)
     index.add(embeddings.astype('float32'))
     
     print(f"FAISS index created: {index.ntotal} vectors")
