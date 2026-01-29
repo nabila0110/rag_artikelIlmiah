@@ -27,6 +27,9 @@ data/*.csv
 data/*.tsv
 data/*.json
 
+# Ignore ALL CSV files in folder
+*.csv
+
 # Ignore FAISS index files (binary, large)
 data/*.index
 data/*.faiss
