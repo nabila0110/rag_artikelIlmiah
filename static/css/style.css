@@ -1,14 +1,20 @@
 :root {
-    --primary-color: #4A90E2;
+    --primary-color: #17d4d4;
     --success-color: #4CAF50;
     --secondary-color: #6c757d;
+    --bg-dark: #050810;
+    --bg-card: #0f1419;
+    --text-primary: #d4d8dd;
+    --text-secondary: #7a7e85;
+    --border-color: #1a1f2e;
 }
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f8f9fa;
+    background: linear-gradient(135deg, #050810 0%, #0a0f1a 100%);
     margin: 0;
     padding: 0;
+    color: var(--text-primary);
 }
 
 .main-wrapper {
@@ -36,8 +42,9 @@ body {
 }
 
 .search-card {
-    border: 1px solid #e7e9ec;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    background-color: var(--bg-card);
 }
 
 .right-content-area {
@@ -48,13 +55,20 @@ body {
 #queryInput {
     border-radius: 10px 0 0 10px;
     font-size: 1.1rem;
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--border-color);
     transition: border-color 0.3s;
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+}
+
+#queryInput::placeholder {
+    color: var(--text-secondary);
 }
 
 #queryInput:focus {
     border-color: var(--primary-color);
-    box-shadow: none;
+    box-shadow: 0 0 0 0.2rem rgba(23, 212, 212, 0.25);
+    background-color: var(--bg-card);
 }
 
 #searchBtn {
@@ -63,35 +77,62 @@ body {
     font-weight: 600;
 }
 
-/* Sidebar Filter */
+/* Input year placeholder styling */
+input[type="number"]::placeholder {
+    color: var(--text-primary) !important;
+    opacity: 0.7;
+}
+
+/* Sidebar Filter dengan efek 3D */
 .filter-card {
     border: none;
-    border-radius: 10px;
+    border-radius: 15px;
     max-height: calc(100vh - 40px);
     overflow-y: auto;
+    background: linear-gradient(145deg, #0f1419, #0a0f1a);
+    box-shadow: 
+        15px 15px 40px rgba(0, 0, 0, 0.8),
+        -15px -15px 40px rgba(20, 25, 40, 0.2),
+        inset 2px 2px 5px rgba(255, 255, 255, 0.02);
+    transform: translateZ(0);
+    transition: all 0.4s ease;
+}
+
+.filter-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 
+        20px 20px 50px rgba(0, 0, 0, 0.9),
+        -20px -20px 50px rgba(20, 25, 40, 0.3),
+        inset 2px 2px 5px rgba(255, 255, 255, 0.03);
+}
+
+.filter-card .card-header {
+    background: linear-gradient(135deg, var(--primary-color), #0fa9a9);
+    border: none;
+    box-shadow: 0 5px 15px rgba(23, 212, 212, 0.2);
 }
 
 .filter-card::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
 }
 
 .filter-card::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--bg-dark);
     border-radius: 10px;
 }
 
 .filter-card::-webkit-scrollbar-thumb {
-    background: #888;
+    background: var(--primary-color);
     border-radius: 10px;
 }
 
 .filter-card::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: #4a7fc9;
 }
 
 .filter-section {
     padding-bottom: 1rem;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .filter-section:last-child {
@@ -100,7 +141,7 @@ body {
 }
 
 .filter-section label {
-    color: #333;
+    color: #5a5f66;
     font-size: 0.95rem;
     margin-bottom: 0.75rem;
 }
@@ -111,8 +152,18 @@ body {
 
 .filter-section .form-check-label {
     font-size: 0.9rem;
-    color: #555;
+    color: #5a5f66;
     cursor: pointer;
+}
+
+.filter-section .form-check-input {
+    background-color: var(--bg-dark);
+    border-color: var(--border-color);
+}
+
+.filter-section .form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
 }
 
 .filter-section .form-range {
@@ -124,11 +175,48 @@ body {
     accent-color: var(--primary-color);
 }
 
+/* Range slider styling */
+input[type="range"] {
+    background: transparent;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 1.2rem;
+    height: 1.2rem;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(23, 212, 212, 0.3);
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+    background: linear-gradient(to right, #3a3f47 0%, #3a3f47 100%);
+    height: 0.5rem;
+    border-radius: 0.25rem;
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 1.2rem;
+    height: 1.2rem;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 8px rgba(23, 212, 212, 0.3);
+}
+
+input[type="range"]::-moz-range-track {
+    background: #3a3f47;
+    border-radius: 0.25rem;
+    height: 0.5rem;
+}
+
 /* Answer text */
 .answer-text {
     font-size: 1.05rem;
     line-height: 1.8;
-    color: #333;
+    color: var(--text-primary);
 }
 
 /* Citation links */
@@ -146,16 +234,18 @@ body {
 /* Reference items */
 .reference-item {
     transition: all 0.3s ease;
-    background-color: #fff;
+    background-color: var(--bg-card);
+    border-color: var(--border-color) !important;
 }
 
 .reference-item:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 16px rgba(91, 163, 255, 0.2);
     transform: translateY(-2px);
+    border-color: var(--primary-color) !important;
 }
 
 .reference-item h6 {
-    color: #333;
+    color: var(--text-primary);
     font-weight: 600;
 }
 
@@ -163,17 +253,58 @@ body {
     color: var(--primary-color);
 }
 
+.reference-item .text-muted {
+    color: var(--text-secondary) !important;
+}
+
+.reference-item p {
+    color: var(--text-secondary);
+}
+
 /* Cards */
 .card {
-    border: none;
-    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
     overflow: hidden;
+    background-color: var(--bg-card);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
 }
 
 .card-header {
-    border-radius: 10px 10px 0 0 !important;
-    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
     padding: 1rem;
+    border-radius: 12px 12px 0 0 !important;
+    font-weight: 600;
+}
+
+.card-body {
+    background-color: var(--bg-card);
+}
+
+/* Statistics Card dengan efek 3D */
+.card.shadow-sm.mt-4 {
+    background: linear-gradient(145deg, #0f1419, #0a0f1a);
+    box-shadow: 
+        15px 15px 40px rgba(0, 0, 0, 0.8),
+        -15px -15px 40px rgba(20, 25, 40, 0.2),
+        inset 2px 2px 5px rgba(255, 255, 255, 0.02);
+    border: none;
+    transition: all 0.4s ease;
+    transform: translateZ(0);
+}
+
+.card.shadow-sm.mt-4:hover {
+    transform: translateY(-8px);
+    box-shadow: 
+        20px 20px 50px rgba(0, 0, 0, 0.9),
+        -20px -20px 50px rgba(20, 25, 40, 0.3),
+        inset 2px 2px 5px rgba(255, 255, 255, 0.03);
+}
+
+.card.shadow-sm.mt-4 .card-header {
+    background: linear-gradient(135deg, #17d4d4, #0fa9a9);
+    border: none;
+    box-shadow: 0 5px 15px rgba(23, 212, 212, 0.2);
 }
 
 /* Statistics Card */
@@ -185,43 +316,47 @@ body {
     display: block;
     font-size: 0.85rem;
     margin-bottom: 0.25rem;
+    color: #5a5f66;
 }
 
 .stats-item .h6 {
     font-weight: 700;
-    color: var(--primary-color);
+    color: #5a5f66;
 }
 
 /* Pagination */
 .pagination {
     margin-top: 2rem;
     padding: 1.5rem 0;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid var(--border-color);
 }
 
 .page-link {
     color: var(--primary-color);
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
     padding: 0.5rem 0.75rem;
     margin: 0 0.25rem;
     transition: all 0.3s;
+    background-color: var(--bg-card);
 }
 
 .page-link:hover {
     background-color: var(--primary-color);
-    color: white;
+    color: var(--text-primary);
     border-color: var(--primary-color);
 }
 
 .page-item.active .page-link {
     background-color: var(--primary-color);
     border-color: var(--primary-color);
+    color: var(--text-primary);
 }
 
 .page-item.disabled .page-link {
-    color: #6c757d;
+    color: var(--text-secondary);
     cursor: not-allowed;
+    background-color: var(--bg-dark);
 }
 
 /* Loading animation */
@@ -232,21 +367,28 @@ body {
 /* Header styling */
 .display-4 {
     font-weight: 700;
-    color: #333;
+    color: var(--text-primary);
+    text-shadow: 0 2px 10px rgba(23, 212, 212, 0.2);
 }
 
 .lead {
     font-size: 1.15rem;
+    color: var(--text-secondary);
 }
 
 /* Form controls */
 .form-control, .form-check-input {
     border-radius: 5px;
+    background-color: var(--bg-dark);
+    border-color: var(--border-color);
+    color: var(--text-primary);
 }
 
 .form-control:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(23, 212, 212, 0.15);
+    background-color: var(--bg-card);
+    color: var(--text-primary);
 }
 
 /* Badge styling */
@@ -254,6 +396,11 @@ body {
     padding: 0.4rem 0.6rem;
     font-size: 0.85rem;
     font-weight: 600;
+}
+
+.badge.bg-primary {
+    background: #3a3f47 !important;
+    color: #a8adb4 !important;
 }
 
 /* Responsive */
@@ -307,7 +454,7 @@ body {
         width: 85%;
         max-width: 350px;
         height: 100vh;
-        background-color: #fff;
+        background: linear-gradient(145deg, #1e2439, #171b2e);
         z-index: 1045;
         overflow-y: auto;
         transition: left 0.3s ease;
@@ -385,10 +532,137 @@ html {
 /* Alert styling */
 .alert {
     border-radius: 10px;
-    border: none;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-card);
+    color: var(--text-primary);
+}
+
+.alert-info {
+    background-color: rgba(23, 162, 184, 0.1);
+    border-color: #17a2b8;
+    color: #5dbecd;
+}
+
+.alert-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    border-color: #dc3545;
+    color: #f88793;
+}
+
+.alert-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    border-color: #ffc107;
+    color: #ffd454;
 }
 
 .alert-sm {
     padding: 0.75rem;
     font-size: 0.9rem;
+}
+
+/* Button styling untuk dark theme */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), #0fa9a9);
+    border: none;
+    box-shadow: 0 4px 15px rgba(23, 212, 212, 0.2);
+    transition: all 0.3s ease;
+    color: var(--text-primary);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0fa9a9, var(--primary-color));
+    box-shadow: 0 6px 20px rgba(23, 212, 212, 0.3);
+    transform: translateY(-2px);
+    color: var(--text-primary);
+}
+
+.btn-outline-secondary {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+    background-color: transparent;
+}
+
+.btn-outline-secondary:hover {
+    color: var(--bg-dark);
+    background-color: var(--text-primary);
+    border-color: var(--text-primary);
+}
+
+/* Text colors */
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.text-muted {
+    color: var(--text-secondary) !important;
+}
+
+/* Badge styling */
+.badge {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.badge.bg-primary {
+    background: linear-gradient(135deg, var(--primary-color), #4a7fc9) !important;
+    box-shadow: 0 2px 8px rgba(91, 163, 255, 0.3);
+}
+
+/* Spinner untuk dark theme */
+.spinner-border-primary {
+    color: var(--primary-color);
+}
+
+/* Input range/slider styling */
+input[type="range"] {
+    accent-color: var(--primary-color);
+}
+
+input[type="number"] {
+    background-color: var(--bg-dark);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+input[type="number"]:focus {
+    background-color: var(--bg-card);
+    border-color: var(--primary-color);
+}
+
+/* Icon coloring */
+.fas, .fa {
+    color: inherit;
+}
+
+/* Card success header (untuk answer) */
+.card-header.bg-success {
+    background: linear-gradient(135deg, var(--success-color), #3d8b40) !important;
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+    color: var(--text-primary) !important;
+}
+
+/* Card info header (untuk results) */
+.card-header.bg-info {
+    background: linear-gradient(135deg, #17d4d4, #0fa9a9) !important;
+    box-shadow: 0 5px 15px rgba(23, 212, 212, 0.2);
+    color: var(--text-primary) !important;
+}
+
+/* Footer styling */
+footer, .footer {
+    background: linear-gradient(135deg, #050810 0%, #0a0f1a 100%);
+    border-top: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+footer a, .footer a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+footer a:hover, .footer a:hover {
+    color: #0fa9a9;
+    text-decoration: underline;
 }

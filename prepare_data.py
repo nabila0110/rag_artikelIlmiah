@@ -17,7 +17,7 @@ def prepare_data():
     print('\n[1/4] Checking source files...')
 
     #Check source files
-    source_chunks = 'data_chunk.csv'  
+    source_chunks = data_dir / 'data_chunk.csv'  
     
     if not Path(source_chunks).exists():
         print(f"Error: {source_chunks} not found!")
@@ -38,6 +38,12 @@ def prepare_data():
     model_name = 'intfloat/multilingual-e5-base'
     model = SentenceTransformer(model_name)
     
+    # HAPUS layer Normalize untuk mendapatkan embedding mentah
+    if len(model) > 0 and model[-1].__class__.__name__ == 'Normalize':
+        print("Removing Normalize layer from model...")
+        model._modules.pop(str(len(model) - 1))
+        print(f"Model now has {len(model)} layers (Normalize removed)")
+    
     embeddings = model.encode(
         chunks_df['chunk_text'].tolist(),
         show_progress_bar=True,
@@ -47,8 +53,20 @@ def prepare_data():
     
     print(f"Embeddings created: {embeddings.shape}")
     
+    # Cek L2 norm sample (harus > 1 jika tidak ternormalisasi)
+    sample_l2_norm = np.linalg.norm(embeddings[0])
+    print(f"Sample L2 norm (before manual norm): {sample_l2_norm:.6f}")
+    
+    #Save embeddings BEFORE normalization
+    np.save(data_dir / 'bn_embeddings.npy', embeddings)
+    print(f"Saved (before norm): {data_dir / 'bn_embeddings.npy'}")
+    
     #Normalize untuk cosine similarity
     faiss.normalize_L2(embeddings)
+    
+    # Cek L2 norm setelah normalisasi
+    sample_l2_norm_after = np.linalg.norm(embeddings[0])
+    print(f"Sample L2 norm (after manual norm): {sample_l2_norm_after:.6f}")
     
     #Create FAISS index
     print("\n[4/4] Creating FAISS index...")
@@ -79,9 +97,9 @@ def prepare_data():
     print("-"*60)
     print("\nFiles created:")
     print(f"  - {data_dir / 'faiss_index.index'}")
+    print(f"  - {data_dir / 'bn_embeddings.npy'}")
     print(f"  - {data_dir / 'embeddings.npy'}")
     print(f"  - {models_dir / 'sentence_transformer_model'}")
-    
     return True
 
 

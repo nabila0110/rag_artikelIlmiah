@@ -12,6 +12,8 @@ __pycache__/
 *.pyo
 *.pyd
 
+calculate.py
+
 # Virtual Environment
 env/
 venv/
