@@ -27,8 +27,8 @@ class Config:
     LLM_MAX_TOKENS = 500
 
     #retrieval settings
-    DEFAULT_TOP_K = 20
-    MAX_TOP_K = 30
+    DEFAULT_TOP_K = 10
+    MAX_TOP_K = 100
 
     #generation settings
     MAX_CONTEXT_CHUNKS = 5

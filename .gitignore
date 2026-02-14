@@ -105,3 +105,11 @@ logs/
 build/
 dist/
 *.egg-info/
+
+# ============================================
+# visualization
+# ============================================
+visualizations/
+*.png
+
+visualizations/flowchart.html

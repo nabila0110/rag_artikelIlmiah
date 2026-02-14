@@ -126,9 +126,8 @@
                             <input class="form-control form-control-sm d-inline-block" 
                                    type="number" 
                                    id="topKInput" 
-                                   value="30" 
-                                   min="5" 
-                                   max="100"
+                                   value="10" 
+                                   min="5"
                                    style="width: 70px;">
                         </div>
                     </div>
@@ -286,7 +285,10 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Data received:', data);
             
             lastSearchData = data;
-            allResults = data.results || [];
+            allResults = (data.results || []).map((result, index) => ({
+                ...result,
+                refId: index + 1
+            }));
             updateSectionFilter();
             applyFilters();
             
@@ -338,7 +340,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Display paginated results
     function displayPaginatedResults() {
         let html = '';
-        const totalPages = Math.ceil(filteredResults.length / ITEMS_PER_PAGE);
+        const citedRefIds = getCitedRefIds(lastSearchData && lastSearchData.answer);
+        const citedResults = filteredResults.filter(ref => citedRefIds.has(ref.refId));
+        const nonCitedResults = filteredResults.filter(ref => !citedRefIds.has(ref.refId));
+        const totalPages = Math.ceil(nonCitedResults.length / ITEMS_PER_PAGE);
         
         if (filteredResults.length === 0) {
             resultsContainer.innerHTML = `
@@ -355,7 +360,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (lastSearchData && lastSearchData.answer) {
             html += `
                 <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-success text-white">
+                    <div class="card-header bg-success text-black">
                         <h5 class="mb-0">
                             <i class="fas fa-comment-dots"></i> Jawaban
                         </h5>
@@ -367,16 +372,32 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }
         
+        // Cited results section
+        if (citedResults.length > 0) {
+            html += `
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-info text-black">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bookmark text-black"></i> Hasil Disitasi (${citedResults.length})
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        ${formatReferences(citedResults)}
+                    </div>
+                </div>
+            `;
+        }
+
         // Results section
         const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
         const endIdx = startIdx + ITEMS_PER_PAGE;
-        const pageResults = filteredResults.slice(startIdx, endIdx);
+        const pageResults = nonCitedResults.slice(startIdx, endIdx);
         
         html += `
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-info text-white">
+                <div class="card-header bg-info text-black">
                     <h5 class="mb-0">
-                        <i class="fas fa-list"></i> Hasil Pencarian (${filteredResults.length})
+                        <i class="fas fa-list"></i> Hasil Pencarian (${nonCitedResults.length})
                         ${allResults.length !== filteredResults.length ? `<small> (Difilter dari ${allResults.length})</small>` : ''}
                     </h5>
                 </div>
@@ -388,6 +409,18 @@ document.addEventListener('DOMContentLoaded', function() {
         
         resultsContainer.innerHTML = html;
         
+        // Enable smooth scroll on citations
+        resultsContainer.querySelectorAll('.citation-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const refId = link.getAttribute('data-ref-id');
+                const target = document.getElementById(`ref-${refId}`);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
         // Show pagination if needed
         if (totalPages > 1) {
             displayPagination(totalPages);
@@ -489,17 +522,30 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Format answer
     function formatAnswer(answer) {
+        if (!answer) return '';
         return answer.replace(/\[(\d+)\]/g, (match, num) => {
-            return `<a href="#ref-${num}" class="citation-link">[${num}]</a>`;
+            return `<a href="#ref-${num}" class="citation-link" data-ref-id="${num}">[${num}]</a>`;
         });
+    }
+
+    function getCitedRefIds(answer) {
+        const ids = new Set();
+        if (!answer) return ids;
+        const matches = answer.match(/\[(\d+)\]/g) || [];
+        matches.forEach(match => {
+            const num = parseInt(match.replace(/\[|\]/g, ''), 10);
+            if (!Number.isNaN(num)) ids.add(num);
+        });
+        return ids;
     }
     
     // Format references
     function formatReferences(refs) {
-        return refs.map((ref, index) => {
+        return refs.map((ref) => {
             return `
-                <div class="reference-item mb-3 p-3 border rounded">
-                    <h6 class="mb-2">
+                <div class="reference-item mb-3 p-3 border rounded" id="ref-${ref.refId}">
+                    <h6 class="mb-2 d-flex align-items-start gap-2">
+                        <span class="ref-rank">[${ref.refId}]</span>
                         <a href="${ref.url}" target="_blank" class="text-decoration-none">
                             ${ref.judul}
                         </a>

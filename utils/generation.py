@@ -20,7 +20,7 @@ class GenerationSystem:
             logger.info("Ollama connection success")
         except Exception as e:
             logger.error(f"cannot connect to ollama: {e}")
-            raise ConnectionError("Ollama service not available. Please start ollama")
+            raise ConnectionError("Ollama service tidak tersedia. Pastikan Ollama service berjalan dengan perintah 'ollama serve'")
         
     def generate_answer(self, query: str, retrieved_chunks: List[Dict], max_context_chunks: int = 5) -> Dict:
         try:
