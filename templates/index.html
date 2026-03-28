@@ -29,10 +29,10 @@
                     <label class="form-label fw-bold">Tahun</label>
                     <div class="row g-2">
                         <div class="col-6">
-                            <input type="number" class="form-control form-control-sm text-white" id="yearMin" placeholder="Dari" min="1900" max="2099">
+                            <input type="number" class="form-control form-control-sm" id="yearMin" placeholder="Dari" min="1900" max="2099">
                         </div>
                         <div class="col-6">
-                            <input type="number" class="form-control form-control-sm text-white" id="yearMax" placeholder="Sampai" min="1900" max="2099">
+                            <input type="number" class="form-control form-control-sm" id="yearMax" placeholder="Sampai" min="1900" max="2099">
                         </div>
                     </div>
                 </div>
@@ -42,7 +42,7 @@
                     <label class="form-label fw-bold">Min. Similarity</label>
                     <div class="d-flex align-items-center gap-2">
                         <input type="range" class="form-range" id="similarityThreshold" min="0" max="100" value="0" step="5">
-                        <span class="bg-primary" id="similarityValue">0%</span>
+                        <span id="similarityValue">0%</span>
                     </div>
                 </div>
 
@@ -248,7 +248,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Search initiated:', query);
         
         if (!query) {
-            alert('Masukkan pertanyaan terlebih dahulu');
+            if (window.showAppMessage) {
+                window.showAppMessage('Validasi', 'Masukkan pertanyaan terlebih dahulu', 'warning');
+            }
             return;
         }
         
@@ -376,9 +378,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (citedResults.length > 0) {
             html += `
                 <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-info text-black">
+                    <div class="card-header bg-info">
                         <h5 class="mb-0">
-                            <i class="fas fa-bookmark text-black"></i> Hasil Disitasi (${citedResults.length})
+                            <i class="fas fa-bookmark "></i> Hasil Disitasi (${citedResults.length})
                         </h5>
                     </div>
                     <div class="card-body">
@@ -416,7 +418,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const refId = link.getAttribute('data-ref-id');
                 const target = document.getElementById(`ref-${refId}`);
                 if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    resultsContainer.querySelectorAll('.reference-item.citation-active').forEach(item => {
+                        item.classList.remove('citation-active');
+                    });
+                    target.classList.add('citation-active');
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => {
+                        target.classList.remove('citation-active');
+                    }, 2500);
                 }
             });
         });

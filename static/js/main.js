@@ -21,7 +21,7 @@ const utils = {
     // Copy to clipboard
     copyToClipboard: function(text) {
         navigator.clipboard.writeText(text).then(() => {
-            alert('Copied to clipboard!');
+            window.showAppMessage('Berhasil', 'Copied to clipboard!', 'success');
         });
     },
     
@@ -90,22 +90,131 @@ const searchHistory = {
     }
 };
 
+const themeManager = {
+    key: 'rag_theme_mode',
+    defaultTheme: 'dark',
+
+    apply: function(theme) {
+        const normalizedTheme = ['dark', 'light', 'plain'].includes(theme) ? theme : 'dark';
+        document.body.setAttribute('data-theme', normalizedTheme);
+        localStorage.setItem(this.key, normalizedTheme);
+    },
+
+    init: function() {
+        const savedTheme = localStorage.getItem(this.key) || this.defaultTheme;
+        this.apply(savedTheme);
+
+        const toggleButton = document.getElementById('themeToggle');
+        if (!toggleButton) {
+            return;
+        }
+
+        toggleButton.addEventListener('click', () => {
+            const currentTheme = document.body.getAttribute('data-theme') || this.defaultTheme;
+            const themeOrder = ['dark', 'light', 'plain'];
+            const currentIndex = themeOrder.indexOf(currentTheme);
+            const nextTheme = themeOrder[(currentIndex + 1) % themeOrder.length];
+            this.apply(nextTheme);
+        });
+    }
+};
+
+const appMessage = {
+    init: function() {
+        this.overlay = document.getElementById('appMessageOverlay');
+        this.title = document.getElementById('appMessageTitle');
+        this.body = document.getElementById('appMessageBody');
+        this.icon = document.getElementById('appMessageIcon');
+        this.okBtn = document.getElementById('appMessageOkBtn');
+        if (!this.overlay || !this.title || !this.body || !this.icon || !this.okBtn) {
+            return;
+        }
+
+        this.okBtn.addEventListener('click', () => this.hide());
+        this.overlay.addEventListener('click', (e) => {
+            if (e.target === this.overlay) {
+                this.hide();
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !this.overlay.classList.contains('d-none')) {
+                this.hide();
+            }
+        });
+    },
+
+    show: function(title, message, type = 'error') {
+        if (!this.overlay || !this.title || !this.body || !this.icon || !this.okBtn) {
+            return;
+        }
+        const normalizedType = ['error', 'warning', 'success', 'info'].includes(type) ? type : 'error';
+        const defaultTitle = {
+            error: 'Ooops!',
+            warning: 'Perhatian!',
+            success: 'Berhasil!',
+            info: 'Informasi'
+        };
+        const iconClass = {
+            error: 'fas fa-triangle-exclamation',
+            warning: 'fas fa-triangle-exclamation',
+            success: 'fas fa-check',
+            info: 'fas fa-circle-info'
+        };
+
+        this.title.textContent = title || defaultTitle[normalizedType];
+        this.body.textContent = message || '';
+        this.icon.innerHTML = `<i class="${iconClass[normalizedType]}"></i>`;
+        this.overlay.classList.remove('d-none', 'type-error', 'type-warning', 'type-success', 'type-info', 'is-visible');
+        this.overlay.classList.add(`type-${normalizedType}`);
+        this.overlay.classList.remove('d-none');
+        requestAnimationFrame(() => {
+            this.overlay.classList.add('is-visible');
+        });
+        this.okBtn.focus();
+    },
+
+    hide: function() {
+        if (!this.overlay) {
+            return;
+        }
+        this.overlay.classList.remove('is-visible');
+        setTimeout(() => {
+            this.overlay.classList.add('d-none');
+        }, 180);
+    }
+};
+
 // Export functions
 window.utils = utils;
 window.searchHistory = searchHistory;
+window.themeManager = themeManager;
+window.showAppMessage = function(title, message, type = 'error') {
+    appMessage.show(title, message, type);
+};
 
 // Auto-save search queries
 document.addEventListener('DOMContentLoaded', () => {
+    appMessage.init();
+    themeManager.init();
+
     // Display search history on load
-    const searchFormContainer = document.querySelector('#searchForm').parentElement;
-    searchFormContainer.insertAdjacentHTML('beforeend', searchHistory.display());
+    const searchForm = document.querySelector('#searchForm');
+    const searchFormContainer = searchForm ? searchForm.parentElement : null;
+    if (searchFormContainer) {
+        searchFormContainer.insertAdjacentHTML('beforeend', searchHistory.display());
+    }
     
     // Click handler for history items
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('history-item')) {
             const query = e.target.getAttribute('data-query');
-            document.getElementById('queryInput').value = query;
-            document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+            const queryInput = document.getElementById('queryInput');
+            const currentSearchForm = document.getElementById('searchForm');
+            if (!queryInput || !currentSearchForm) {
+                return;
+            }
+            queryInput.value = query;
+            currentSearchForm.dispatchEvent(new Event('submit'));
         }
     });
 });
@@ -115,7 +224,10 @@ document.addEventListener('keydown', (e) => {
     // Ctrl/Cmd + K to focus search
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        document.getElementById('queryInput').focus();
+        const queryInput = document.getElementById('queryInput');
+        if (queryInput) {
+            queryInput.focus();
+        }
     }
 });
 
