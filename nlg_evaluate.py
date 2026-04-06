@@ -1,14 +1,3 @@
-"""
-NLG evaluation using BERTScore + faithfulness metrics:
-- BERTSCORE_F1
-- ENTITY_FAITHFULNESS (NER overlap between answer and contexts)
-- CONTEXT_COVERAGE (content-word overlap answer vs contexts)
-
-Supports two modes:
-1) Provide --generated CSV (columns: query, generated_answer, contexts?)
-2) Generate on-the-fly using existing utils/retrieval.py and utils/generation.py
-"""
-
 import os
 import ast
 from typing import List, Dict, Optional

@@ -242,11 +242,16 @@ body[data-theme="plain"] .fa {
     color: #000 !important;
 }
 
-body[data-theme="plain"] .badge.bg-primary,
-body[data-theme="plain"] #similarityValue {
+body[data-theme="plain"] .badge.bg-primary {
     background: #fff !important;
     color: #000 !important;
     border: 1px solid #000 !important;
+}
+
+body[data-theme="plain"] #similarityValue {
+    background: transparent !important;
+    color: #000 !important;
+    border: none !important;
 }
 
 body[data-theme="plain"] .app-message-overlay {
@@ -420,6 +425,7 @@ input[type="number"]::placeholder {
 
 .filter-section .form-range {
     height: 0.5rem;
+    border: none;
 }
 
 .filter-section .form-range,

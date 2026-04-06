@@ -62,7 +62,7 @@ class RetrievalSystem:
 
         return max(0.0, min(1.0, float(sim)))
 
-    def search(self, query, top_k=30):
+    def search(self, query, top_k=10):
         try:
             query_embedding = self.model.encode([query], normalize_embeddings=True)
             distances, indices = self.index.search(np.array(query_embedding).astype('float32'), top_k)

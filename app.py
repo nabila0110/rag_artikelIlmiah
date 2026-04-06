@@ -3,10 +3,11 @@ from flask_cors import CORS
 import logging
 from pathlib import Path
 import sys
-# tambah project root ke path
+
+# Tambah project root ke path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from config import config
+from config import Config
 from utils.retrieval import RetrievalSystem
 from utils.generation import GenerationSystem
 
@@ -17,36 +18,46 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-
-env = 'development'
-app.config.from_object(config[env])
+app.config.from_object(Config)
 
 CORS(app)
 
 retrieval_system = None
 generation_system = None
+systems_initialized = False
 
-def get_retrieval_system():
-    global retrieval_system
-    if retrieval_system is None:
-        logger.info("Initializing retrieval system...")
-        retrieval_system = RetrievalSystem(
-            chunks_file=app.config['CHUNKS_FILE'],
-            faiss_index_file=app.config['FAISS_INDEX_FILE'],
-            model_path=app.config['EMBEDDING_MODEL_PATH']
-        )
-    return retrieval_system
+def initialize_systems():
+    global retrieval_system, generation_system, systems_initialized
 
-def get_generation_system():
-    global generation_system
-    if generation_system is None:
-        logger.info("Initializing generation system...")
-        generation_system = GenerationSystem(
-            model_name=app.config['LLM_MODEL'],
-            temperature=app.config['LLM_TEMPERATURE'],
-            max_tokens=app.config['LLM_MAX_TOKENS']
-        )
-    return generation_system
+    if systems_initialized:
+        return
+
+    logger.info("="*60)
+    logger.info("Pre-loading retrieval system...")
+    logger.info("="*60)
+    retrieval_system = RetrievalSystem(
+        chunks_file=app.config['CHUNKS_FILE'],
+        faiss_index_file=app.config['FAISS_INDEX_FILE'],
+        model_path=app.config['EMBEDDING_MODEL_PATH']
+    )
+    logger.info("Retrieval system loaded successfully")
+
+    logger.info("Pre-loading generation system...")
+    generation_system = GenerationSystem(
+        model_name=app.config['LLM_MODEL'],
+        temperature=app.config['LLM_TEMPERATURE'],
+        max_tokens=app.config['LLM_MAX_TOKENS']
+    )
+    logger.info("Generation system loaded successfully")
+
+    systems_initialized = True
+    logger.info("="*60)
+    logger.info("All systems ready!")
+    logger.info("="*60)
+
+def ensure_systems_initialized():
+    if not systems_initialized:
+        raise RuntimeError("Systems not initialized. Jalankan aplikasi melalui run.py agar startup initialization berjalan.")
 
 #ROUTES
 @app.route('/')
@@ -56,6 +67,7 @@ def index():
 @app.route('/api/search', methods=['POST'])
 def search():
     try:
+        ensure_systems_initialized()
         data=request.get_json()
 
         if not data or 'query' not in data:
@@ -74,8 +86,7 @@ def search():
         
         logger.info(f"Search request: query='{query}', top_k={top_k}, generate={generate_answer}")
 
-        retrieval = get_retrieval_system()
-        results = retrieval.search(query, top_k=top_k)
+        results = retrieval_system.search(query, top_k=top_k)
 
         response = {
             'query': query,
@@ -85,8 +96,7 @@ def search():
 
         #generate answer if requested
         if generate_answer:
-            generation = get_generation_system()
-            generation_result = generation.generate_answer(
+            generation_result = generation_system.generate_answer(
                 query=query,
                 retrieved_chunks=results,
                 max_context_chunks=app.config['MAX_CONTEXT_CHUNKS']
@@ -108,29 +118,43 @@ def search():
 @app.route('/api/stats')
 def stats():
     try:
-        retrieval = get_retrieval_system()
-        stats = retrieval.get_statistics()
+        ensure_systems_initialized()
+        stats = retrieval_system.get_statistics()
         return jsonify(stats)
     except Exception as e:
         logger.error(f"Error geting stats: {e}")
         return jsonify({'error': str(e)}), 500
-    
-@app.route('/health') #cek
-def health():
-    try:
-        retrieval = get_retrieval_system()
-        generation = get_generation_system()
 
+@app.route('/api/ready')
+def ready():
+    try:
+        retrieval_ready = retrieval_system is not None
+        generation_ready = generation_system is not None
         return jsonify({
-            'status': 'healthy',
-            'retrieval': 'ok',
-            'generation': 'ok'
-        })
+            'ready': systems_initialized and retrieval_ready and generation_ready,
+            'retrieval_ready': retrieval_ready,
+            'generation_ready': generation_ready
+        }), 200
     except Exception as e:
-        return jsonify({
-            'status': 'unhealthy',
-            'error': str(e)
-        }), 500
+        logger.error(f"Error checking readiness: {e}")
+        return jsonify({'ready': False, 'error': str(e)}), 500
+    
+# @app.route('/health') #cek
+# def health():
+#     try:
+#         retrieval = get_retrieval_system()
+#         generation = get_generation_system()
+
+#         return jsonify({
+#             'status': 'healthy',
+#             'retrieval': 'ok',
+#             'generation': 'ok'
+#         })
+#     except Exception as e:
+#         return jsonify({
+#             'status': 'unhealthy',
+#             'error': str(e)
+#         }), 500
     
 #EROR HANDLERS
 @app.errorhandler(404)
@@ -145,8 +169,9 @@ def internal_error(error):
 #MAIN
 if __name__=='__main__':
     logger.info("Starting Flask application...")
-    logger.info(f"Environment: {env}")
     logger.info(f"Debug mode: {app.config['DEBUG']}")
+
+    initialize_systems()
 
     app.run(
         host='0.0.0.0',

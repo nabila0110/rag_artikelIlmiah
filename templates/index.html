@@ -238,6 +238,46 @@ document.addEventListener('DOMContentLoaded', function() {
         applyFilters();
     });
     resetFiltersBtn.addEventListener('click', resetFilters);
+
+    // Retry sekali jika terjadi network error sementara seperti "Failed to fetch"
+    async function fetchWithRetry(url, options, retryCount = 1, retryDelayMs = 700) {
+        try {
+            return await fetch(url, options);
+        } catch (error) {
+            const isNetworkError = error instanceof TypeError;
+            if (!isNetworkError || retryCount <= 0) {
+                throw error;
+            }
+
+            console.warn('Transient network error, retrying request once...', error);
+            await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+            return fetchWithRetry(url, options, retryCount - 1, retryDelayMs);
+        }
+    }
+
+    async function waitForApiReady(maxAttempts = 6, delayMs = 500) {
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const response = await fetch('/api/ready', {
+                    method: 'GET',
+                    headers: { 'Cache-Control': 'no-cache' }
+                });
+
+                if (response.ok) {
+                    const status = await response.json();
+                    if (status.ready) {
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.warn('Readiness check failed, retrying...', error);
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+
+        return false;
+    }
     
     // Search function
     async function performSearch(event) {
@@ -262,9 +302,14 @@ document.addEventListener('DOMContentLoaded', function() {
         searchBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Mencari...';
         
         try {
+            const apiReady = await waitForApiReady();
+            if (!apiReady) {
+                throw new Error('Server masih inisialisasi. Coba lagi dalam beberapa detik.');
+            }
+
             console.log('Sending request to:', API_URL);
             
-            const response = await fetch(API_URL, {
+            const response = await fetchWithRetry(API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -380,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-info">
                         <h5 class="mb-0">
-                            <i class="fas fa-bookmark "></i> Hasil Disitasi (${citedResults.length})
+                            <i class="fas fa-bookmark "></i> Hasil Sitasi (${citedResults.length})
                         </h5>
                     </div>
                     <div class="card-body">

@@ -86,7 +86,7 @@ def evaluate_retrieval(query_idx, retrieved_chunks, ground_truth_df, k=10, verbo
         else:
             print(f"[MRR@{k}] No relevant docs found = {mrr:.4f}")
     
-    # MAP (Average Precision)
+    # MAP (hits-only AP)
     precisions_at_relevan = []
     num_relevant_seen = 0
     if verbose:
@@ -99,19 +99,13 @@ def evaluate_retrieval(query_idx, retrieved_chunks, ground_truth_df, k=10, verbo
             if verbose:
                 print(f"  Position {i}: relevant found, P({num_relevant_seen}/{i}) = {prec:.4f}")
 
-    # Legacy variant (hits-only denominator): mean over retrieved relevant positions only
+    # AP hits-only: mean precision at positions where relevant docs are found
     avg_precision_hits = np.mean(precisions_at_relevan) if precisions_at_relevan else 0
-
-    # Standard AP denominator (sesuai rumus MAP klasik): total relevant docs
-    ap_denom = len(relevant_docs)
-    avg_precision = (sum(precisions_at_relevan) / ap_denom) if ap_denom > 0 else 0
     if verbose:
         if precisions_at_relevan:
-            print(f"  AP@{k} (standard) = {' + '.join([f'{p:.4f}' for p in precisions_at_relevan])} / R={len(relevant_docs)}")
-            print(f"                   = {sum(precisions_at_relevan):.4f} / {ap_denom} = {avg_precision:.4f}")
-            print(f"  AP@{k} (hits-only) = {' + '.join([f'{p:.4f}' for p in precisions_at_relevan])} / {len(precisions_at_relevan)} = {avg_precision_hits:.4f}")
+            print(f"  AP@{k} = {' + '.join([f'{p:.4f}' for p in precisions_at_relevan])} / {len(precisions_at_relevan)} = {avg_precision_hits:.4f}")
         else:
-            print(f"  No relevant docs in top-{k}: AP@{k} = {avg_precision:.4f}")
+            print(f"  No relevant docs in top-{k}: AP@{k} = {avg_precision_hits:.4f}")
     
     #nDCG_k
     relevances = [] #nanti outputnya kira*: relevances = [1, 0, 2, 2, 1] ini didapat dari relevance_score based on llm judge
@@ -151,11 +145,8 @@ def evaluate_retrieval(query_idx, retrieved_chunks, ground_truth_df, k=10, verbo
 
     return {
         'Precision': precision_k,
-        'Recall': recall_k,
-        'F1 Score': f1_k,
         'MRR': mrr,
-        'MAP': avg_precision,
-        'MAP_HITS_ONLY': avg_precision_hits,
+        'MAP': avg_precision_hits,
         'nDCG': ndcg,
         'Retrieved Docs': len(retrieved_docs),
         'Relevant Docs': len(relevant_docs),
@@ -215,7 +206,7 @@ def run_evaluation(query_df, ground_truth_df, retrieval_function, embedding_mode
             print(f"\n@k={k}:")
             for idx, row in k_results.iterrows():
                 print(f"  Query {row['query_idx']}: {row['query'][:60]}...")
-                print(f"    Precision: {row['Precision']:.4f}, AP@{k}: {row['MAP']:.4f}, AP@{k}(hits-only): {row['MAP_HITS_ONLY']:.4f}, nDCG: {row['nDCG']:.4f}, MRR: {row['MRR']:.4f}")
+                print(f"    Precision: {row['Precision']:.4f}, AP@{k}: {row['MAP']:.4f}, nDCG: {row['nDCG']:.4f}, MRR: {row['MRR']:.4f}")
     
     #aggregate all result
     for k in k_values:
@@ -225,12 +216,9 @@ def run_evaluation(query_df, ground_truth_df, retrieval_function, embedding_mode
         print(f"@{k} SUMMARY - Rata-Rata Hasil Evaluasi untuk {len(query_df)} queries:")
         print(f"{'='*80}")
         print(f"  Precision: {k_results['Precision'].mean():.4f} ± {k_results['Precision'].std():.4f}")
-        # print(f"  Recall:    {k_results['Recall'].mean():.4f} ± {k_results['Recall'].std():.4f}")
-        # print(f"  F1-Score:  {k_results['F1 Score'].mean():.4f} ± {k_results['F1 Score'].std():.4f}")
-        print(f"  MAP@{k} (from AP@{k}): {k_results['MAP'].mean():.4f} ± {k_results['MAP'].std():.4f}")
-        print(f"  MAP@{k} hits-only:     {k_results['MAP_HITS_ONLY'].mean():.4f} ± {k_results['MAP_HITS_ONLY'].std():.4f}")
-        print(f"  nDCG:      {k_results['nDCG'].mean():.4f} ± {k_results['nDCG'].std():.4f}")
         print(f"  MRR:       {k_results['MRR'].mean():.4f} ± {k_results['MRR'].std():.4f}")
+        print(f"  MAP@{k} :     {k_results['MAP'].mean():.4f} ± {k_results['MAP'].std():.4f}")
+        print(f"  nDCG:      {k_results['nDCG'].mean():.4f} ± {k_results['nDCG'].std():.4f}")
     results_df.to_csv('eval_results.csv', index=False)
 
     return results_df
