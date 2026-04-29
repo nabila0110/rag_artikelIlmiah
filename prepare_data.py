@@ -16,12 +16,12 @@ def prepare_data():
 
     print('\n[1/4] Checking source files...')
 
-    #Check source files
+    #check source files
     source_chunks = data_dir / 'data_chunk.csv'  
     
     if not Path(source_chunks).exists():
         print(f"Error: {source_chunks} not found!")
-        print("Please ensure you have the chunks CSV file.")
+        print("Pastikan data Chunks CSV tersedia.")
         return False
     
     print(f"Found: {source_chunks}")
@@ -53,7 +53,7 @@ def prepare_data():
     
     print(f"Embeddings created: {embeddings.shape}")
     
-    # Cek L2 norm sample (harus > 1 jika tidak ternormalisasi)
+    #cek L2 norm sample (harus > 1 jika tidak ternormalisasi)
     sample_l2_norm = np.linalg.norm(embeddings[0])
     print(f"Sample L2 norm (before manual norm): {sample_l2_norm:.6f}")
     
@@ -64,11 +64,11 @@ def prepare_data():
     #Normalize untuk cosine similarity
     faiss.normalize_L2(embeddings)
     
-    # Cek L2 norm setelah normalisasi
+    #cek L2 norm setelah normalisasi
     sample_l2_norm_after = np.linalg.norm(embeddings[0])
     print(f"Sample L2 norm (after manual norm): {sample_l2_norm_after:.6f}")
     
-    #Create FAISS index
+    #create FAISS index
     print("\n[4/4] Creating FAISS index...")
     dimension = embeddings.shape[1]
     index = faiss.IndexFlatIP(dimension)
@@ -76,24 +76,24 @@ def prepare_data():
     
     print(f"FAISS index created: {index.ntotal} vectors")
     
-    #Save files
+    #save files
     print("\nSaving files...")
     
-    #Save FAISS index
+    #save FAISS index
     faiss.write_index(index, str(data_dir / 'faiss_index.index'))
     print(f"Saved: {data_dir / 'faiss_index.index'}")
     
-    #Save embeddings
+    #save embeddings
     np.save(data_dir / 'embeddings.npy', embeddings)
     print(f"Saved: {data_dir / 'embeddings.npy'}")
     
-    #Save model
+    #save model
     model.save(str(models_dir / 'sentence_transformer_model'))
     print(f"Saved: {models_dir / 'sentence_transformer_model'}")
     
-    #Summary
+    #summary
     print("\n" + "-"*60)
-    print("DATA PREPARATION COMPLETE!")
+    print("DATA PREP COMPLETE!")
     print("-"*60)
     print("\nFiles created:")
     print(f"  - {data_dir / 'faiss_index.index'}")

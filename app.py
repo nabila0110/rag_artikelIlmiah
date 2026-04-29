@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 import logging
 from pathlib import Path
-import sys
+import sys #pengganti __init__.py untuk menambah path project root ke sys.path
 
 # Tambah project root ke path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -139,22 +139,22 @@ def ready():
         logger.error(f"Error checking readiness: {e}")
         return jsonify({'ready': False, 'error': str(e)}), 500
     
-# @app.route('/health') #cek
-# def health():
-#     try:
-#         retrieval = get_retrieval_system()
-#         generation = get_generation_system()
+@app.route('/health') #cek
+def health():
+    try:
+        retrieval = get_retrieval_system()
+        generation = get_generation_system()
 
-#         return jsonify({
-#             'status': 'healthy',
-#             'retrieval': 'ok',
-#             'generation': 'ok'
-#         })
-#     except Exception as e:
-#         return jsonify({
-#             'status': 'unhealthy',
-#             'error': str(e)
-#         }), 500
+        return jsonify({
+            'status': 'healthy',
+            'retrieval': 'ok',
+            'generation': 'ok'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e)
+        }), 500
     
 #EROR HANDLERS
 @app.errorhandler(404)
