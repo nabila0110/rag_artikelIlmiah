@@ -53,7 +53,7 @@ def prepare_data():
     
     print(f"Embeddings created: {embeddings.shape}")
     
-    #cek L2 norm sample (harus > 1 jika tidak ternormalisasi)
+    #cek L2 norm sample 
     sample_l2_norm = np.linalg.norm(embeddings[0])
     print(f"Sample L2 norm (before manual norm): {sample_l2_norm:.6f}")
     
@@ -61,7 +61,7 @@ def prepare_data():
     np.save(data_dir / 'bn_embeddings.npy', embeddings)
     print(f"Saved (before norm): {data_dir / 'bn_embeddings.npy'}")
     
-    #Normalize untuk cosine similarity
+    #normalize 
     faiss.normalize_L2(embeddings)
     
     #cek L2 norm setelah normalisasi
@@ -92,9 +92,6 @@ def prepare_data():
     print(f"Saved: {models_dir / 'sentence_transformer_model'}")
     
     #summary
-    print("\n" + "-"*60)
-    print("DATA PREP COMPLETE!")
-    print("-"*60)
     print("\nFiles created:")
     print(f"  - {data_dir / 'faiss_index.index'}")
     print(f"  - {data_dir / 'bn_embeddings.npy'}")

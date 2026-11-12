@@ -4,6 +4,7 @@ import faiss
 from sentence_transformers import SentenceTransformer
 from pathlib import Path
 import logging
+import argparse
 
 logger = logging.getLogger(__name__)
 
@@ -98,4 +99,86 @@ class RetrievalSystem:
             'index_size': self.index.ntotal,
             'embedding_dimension': self.index.d
         }   
+
+
+def _load_evaluation_queries(query_file):
+    queries = pd.read_csv(query_file)
+    queries = queries.rename(columns={
+        'no': 'query_idx',
+        'query_bahasa_indonesia': 'query',
+        'reference_answer_bahasa_indonesia': 'reference_answer',
+    })
+    required = {'query', 'reference_answer'}
+    missing = required.difference(queries.columns)
+    if missing:
+        raise ValueError(f'Missing query columns in {query_file}: {sorted(missing)}')
+    if 'query_idx' not in queries.columns:
+        queries.insert(0, 'query_idx', range(len(queries)))
+    return queries
+
+
+def export_semantic_candidates(
+    query_file,
+    faiss_index_file,
+    chunks_file,
+    model_path,
+    output_file,
+    top_k=10,
+):
+    """Retrieve and save one representative chunk per document for evaluation."""
+    queries = _load_evaluation_queries(query_file)
+    retriever = RetrievalSystem(chunks_file, faiss_index_file, model_path)
+    rows = []
+
+    for _, query_row in queries.iterrows():
+        results = retriever.search(str(query_row['query']), top_k=top_k * 3)
+        seen_titles = set()
+        for result in results:
+            title = str(result.get('judul', '')).strip()
+            if not title or title in seen_titles:
+                continue
+            seen_titles.add(title)
+            rows.append({
+                'query_idx': int(query_row['query_idx']),
+                'query': query_row['query'],
+                'reference_answer': query_row['reference_answer'],
+                'doc_title': title,
+                'chunk_id': result.get('chunk_id', ''),
+                'chunk_text': result.get('chunk_text', ''),
+                'author': result.get('author', 'unknown'),
+                'tahun': result.get('tahun', 'N/A'),
+                'url': result.get('url', '#'),
+                'section': result.get('section', 'unknown'),
+                'retrieval_score': result.get('similarity_score', result.get('similarity', 0.0)),
+                'rank': len(seen_titles),
+                'retrieval_method': 'semantic',
+            })
+            if len(seen_titles) >= top_k:
+                break
+
+    result_df = pd.DataFrame(rows)
+    result_df.to_csv(output_file, index=False)
+    return result_df
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Export semantic retrieval candidates')
+    parser.add_argument('--queries', default='query_set_50.csv')
+    parser.add_argument('--chunks', default='data/data_chunk.csv')
+    parser.add_argument('--faiss-index', default='data/faiss_index.index')
+    parser.add_argument('--model-path', default='models/sentence_transformer_model')
+    parser.add_argument('--output', default='data/semantic_candidates.csv')
+    parser.add_argument('--top-k', type=int, default=10)
+    args = parser.parse_args()
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    result = export_semantic_candidates(
+        args.queries,
+        args.faiss_index,
+        args.chunks,
+        args.model_path,
+        output,
+        args.top_k,
+    )
+    print(f'Saved {len(result)} semantic candidate rows to {output}')
 

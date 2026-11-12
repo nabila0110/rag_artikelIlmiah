@@ -139,23 +139,6 @@ def ready():
         logger.error(f"Error checking readiness: {e}")
         return jsonify({'ready': False, 'error': str(e)}), 500
     
-@app.route('/health') #cek
-def health():
-    try:
-        retrieval = get_retrieval_system()
-        generation = get_generation_system()
-
-        return jsonify({
-            'status': 'healthy',
-            'retrieval': 'ok',
-            'generation': 'ok'
-        })
-    except Exception as e:
-        return jsonify({
-            'status': 'unhealthy',
-            'error': str(e)
-        }), 500
-    
 #EROR HANDLERS
 @app.errorhandler(404)
 def not_found(error):
