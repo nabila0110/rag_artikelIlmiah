@@ -353,39 +353,6 @@ class NLGEvaluator:
         
         return bert_precision, bert_recall, f1_score
 
-    def context_coverage(self, answer: str, contexts: List[str], verbose: bool = False) -> float:
-        ans_doc = self.nlp(answer.lower())
-        ans_words = {
-            tok.text for tok in ans_doc
-            if not tok.is_stop and not tok.is_punct and len(tok.text) > 2
-        }
-        if not ans_words:
-            cov_score = 0.0
-        else:
-            ctx_doc = self.nlp(" ".join(contexts).lower())
-            ctx_words = {tok.text for tok in ctx_doc if not tok.is_punct}
-            overlap = len(ans_words & ctx_words)
-            cov_score = overlap / len(ans_words)
-        
-        if verbose:
-            print(f"\n[Context Coverage] (Word Overlap)")
-            print(f"  Answer: {answer[:100]}...")
-            if ans_words:
-                ctx_doc = self.nlp(" ".join(contexts).lower())
-                ctx_words = {tok.text for tok in ctx_doc if not tok.is_punct}
-                overlap_words = len(ans_words & ctx_words)
-                def _short_words(items, head=10, tail=10):
-                    items = sorted(list(items))
-                    if len(items) <= head + tail:
-                        return items
-                    return items[:head] + ["..."] + items[-tail:]
-
-                print(f"  Content words in answer ({len(ans_words)}): {_short_words(ans_words)}")
-                print(f"  Overlap words ({overlap_words}): {_short_words(ans_words & ctx_words)}")
-                print(f"  Context Coverage = {overlap_words}/{len(ans_words)} = {cov_score:.4f}")
-        
-        return cov_score
-
     def evaluate(
         self,
         question: str,
@@ -400,8 +367,6 @@ class NLGEvaluator:
             metrics['BERT_PRECISION'] = bert_p
             metrics['BERT_RECALL'] = bert_r
             metrics['BERTSCORE_F1'] = bert_f1
-        # metrics['ENTITY_FAITHFULNESS'] = self.entity_faithfulness(answer, contexts)
-        metrics['CONTEXT_COVERAGE'] = self.context_coverage(answer, contexts, verbose=verbose)
         metrics['ANSWER_LENGTH'] = len(answer.split())
         return metrics
 
@@ -510,11 +475,10 @@ def run_nlg_evaluation(
                 print(f"  BERT Precision:   {row['BERT_PRECISION']:.4f}")
                 print(f"  BERT Recall:      {row['BERT_RECALL']:.4f}")
                 print(f"  BERTSCORE F1:     {row['BERTSCORE_F1']:.4f}")
-            print(f"  Context Coverage: {row['CONTEXT_COVERAGE']:.4f}")
 
     # Summary stats
     summary = {}
-    for col in ['BERT_PRECISION', 'BERT_RECALL', 'BERTSCORE_F1', 'CONTEXT_COVERAGE']:
+    for col in ['BERT_PRECISION', 'BERT_RECALL', 'BERTSCORE_F1']:
         if col in results_df.columns:
             summary[col] = {
                 'mean': float(results_df[col].mean()),
