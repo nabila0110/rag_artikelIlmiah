@@ -244,6 +244,22 @@ def summarize_results(results: pd.DataFrame) -> Dict[str, float]:
     }
 
 
+def per_query_results(results: pd.DataFrame, method: str) -> pd.DataFrame:
+    columns = [
+        "query_idx",
+        "query",
+        "BERT_PRECISION",
+        "BERT_RECALL",
+        "BERTSCORE_F1",
+        "faithfulness_score",
+        "citation_correctness",
+        "claim_count",
+    ]
+    output = results[columns].copy()
+    output.insert(0, "method", method)
+    return output
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -260,6 +276,11 @@ def main() -> None:
         "--summary-output",
         type=Path,
         default=Path("data/generation_eval_summary.csv"),
+    )
+    parser.add_argument(
+        "--aggregate-output",
+        type=Path,
+        default=Path("data/generation_eval_aggregate.csv"),
     )
     parser.add_argument("--judge-model", default="gemma2:9b")
     parser.add_argument("--bert-model", default="xlm-roberta-base")
@@ -306,12 +327,14 @@ def main() -> None:
         "bm25": (args.bm25, args.bm25_output),
     }
     summaries = []
+    per_query = []
     for method in args.methods:
         result = evaluate_file(files[method][0], files[method][1], args.judge_model, not args.no_resume)
         result = add_similarity_metrics(result, reference_by_query, bert_evaluator)
         result.to_csv(files[method][1], index=False)
         summary = summarize_results(result)
         summaries.append({"method": method, **summary})
+        per_query.append(per_query_results(result, method))
         print(f"{method}: evaluated {len(result)} answers -> {files[method][1]}")
         print(f"  Claims evaluated: {summary['claims']}")
         print(f"  BERTScore precision: {summary['bert_precision_percent']:.2f}%")
@@ -323,12 +346,16 @@ def main() -> None:
             f"{summary['citation_correctness_percent']:.2f}%"
         )
 
-    summary_df = pd.DataFrame(summaries)
+    summary_df = pd.concat(per_query, ignore_index=True)
     args.summary_output.parent.mkdir(parents=True, exist_ok=True)
     summary_df.to_csv(args.summary_output, index=False)
     print(f"Summary saved to {args.summary_output}")
+    aggregate_df = pd.DataFrame(summaries)
+    args.aggregate_output.parent.mkdir(parents=True, exist_ok=True)
+    aggregate_df.to_csv(args.aggregate_output, index=False)
+    print(f"Aggregate summary saved to {args.aggregate_output}")
     print("\nGENERATION EVALUATION SUMMARY")
-    print(summary_df.to_string(index=False, float_format=lambda value: f"{value:.2f}"))
+    print(aggregate_df.to_string(index=False, float_format=lambda value: f"{value:.2f}"))
 
 
 if __name__ == "__main__":
