@@ -119,24 +119,73 @@ def evaluate_human(
 
     retrieval_rows = []
     generation_rows = []
+    retrieval_positions = {}
 
     for column in human.columns[3:]:
         query, item = parse_header(column)
         if query is None:
             continue
 
-        candidate_rows = semantic[
-            (semantic["_query"] == query) & (semantic["_chunk"] == item)
+        position = retrieval_positions.setdefault(query, 0)
+        target_method = "semantic" if position < 5 else "bm25"
+        semantic_rows = semantic[
+            (semantic["_query"] == query)
+            & (semantic["_chunk"] == item)
+            & (semantic["rank"] <= 5)
         ]
-        method = "semantic"
-        if candidate_rows.empty:
-            candidate_rows = bm25[
-                (bm25["_query"] == query) & (bm25["_chunk"] == item)
-            ]
+        bm25_rows = bm25[
+            (bm25["_query"] == query)
+            & (bm25["_chunk"] == item)
+            & (bm25["rank"] <= 5)
+        ]
+        if not semantic_rows.empty and bm25_rows.empty:
+            candidate_rows = semantic_rows
+            method = "semantic"
+        elif semantic_rows.empty and not bm25_rows.empty:
+            candidate_rows = bm25_rows
             method = "bm25"
+        elif not semantic_rows.empty and not bm25_rows.empty:
+            candidate_rows = semantic_rows if target_method == "semantic" else bm25_rows
+            method = target_method
+        else:
+            candidate_rows = pd.DataFrame()
+            method = target_method
+
+        if candidate_rows.empty:
+            candidate_source = semantic if target_method == "semantic" else bm25
+            target_candidates = candidate_source[
+                candidate_source["_query"] == query
+            ].sort_values("rank").head(5)
+            fuzzy_matches = []
+            for _, candidate_row in target_candidates.iterrows():
+                candidate_text = normalize_text(candidate_row["_chunk"])
+                if item in candidate_text or candidate_text in item:
+                    smaller = min(len(item), len(candidate_text))
+                    larger = max(len(item), len(candidate_text))
+                    overlap_ratio = smaller / larger if larger else 0.0
+                    fuzzy_matches.append((overlap_ratio, candidate_row))
+            if fuzzy_matches:
+                overlap_ratio, candidate_row = max(
+                    fuzzy_matches,
+                    key=lambda match: match[0],
+                )
+                if overlap_ratio >= 0.80:
+                    candidate_rows = pd.DataFrame([candidate_row])
+
+        if candidate_rows.empty:
+            generated_for_query = generation[
+                generation["query"].map(normalize_text) == query
+            ]
+            is_generation_header = any(
+                normalize_text(answer_row["generated_answer"]) == item
+                for _, answer_row in generated_for_query.iterrows()
+            )
+            if not is_generation_header:
+                retrieval_positions[query] = position + 1
 
         if not candidate_rows.empty:
             candidate = candidate_rows.iloc[0]
+            retrieval_positions[query] = position + 1
             judge_scores = [
                 parse_score(human.iloc[row][column], retrieval_labels)
                 for row in range(len(human))

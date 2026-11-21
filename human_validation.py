@@ -76,7 +76,7 @@ def main() -> None:
     parser.add_argument("--query-ids", nargs="+", required=True, help="Selected query IDs")
     parser.add_argument("--semantic", type=Path, default=Path("data/semantic_nlg_results.csv"))
     parser.add_argument("--bm25", type=Path, default=Path("data/bm25_nlg_results.csv"))
-    parser.add_argument("--reference", type=Path, default=Path("data/query_test.csv"))
+    parser.add_argument("--reference", type=Path, default=Path("query_set_50.csv"))
     parser.add_argument("--output", type=Path, default=Path("data/human_validation.csv"))
     args = parser.parse_args()
     result = export_validation(
