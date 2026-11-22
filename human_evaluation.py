@@ -131,12 +131,10 @@ def evaluate_human(
         semantic_rows = semantic[
             (semantic["_query"] == query)
             & (semantic["_chunk"] == item)
-            & (semantic["rank"] <= 5)
         ]
         bm25_rows = bm25[
             (bm25["_query"] == query)
             & (bm25["_chunk"] == item)
-            & (bm25["rank"] <= 5)
         ]
         if not semantic_rows.empty and bm25_rows.empty:
             candidate_rows = semantic_rows
@@ -155,7 +153,7 @@ def evaluate_human(
             candidate_source = semantic if target_method == "semantic" else bm25
             target_candidates = candidate_source[
                 candidate_source["_query"] == query
-            ].sort_values("rank").head(5)
+            ].sort_values("rank").head(10)
             fuzzy_matches = []
             for _, candidate_row in target_candidates.iterrows():
                 candidate_text = normalize_text(candidate_row["_chunk"])
@@ -246,15 +244,8 @@ def evaluate_human(
     retrieval_rows_by_key = {}
     for (method, query_idx), group in retrieval_df.groupby(["method", "query_idx"]):
         group = group.sort_values("rank")
-        grades_by_rank = {
-            int(rank): int(score)
-            for rank, score in zip(
-                group["rank"],
-                group["human_score_median"].fillna(0).astype(int),
-            )
-        }
-        grades = [grades_by_rank.get(rank, 0) for rank in range(1, 6)]
-        metrics = retrieval_metrics(grades, k=5, binary_threshold=1)
+        grades = list(group.sort_values("rank")["human_score_median"].fillna(0).astype(int))
+        metrics = retrieval_metrics(grades, k=len(grades), binary_threshold=1)
         retrieval_per_query.append({
             "method": method,
             "query_idx": int(query_idx),
@@ -275,10 +266,10 @@ def evaluate_human(
             "queries": len(group),
             "matched_chunks": int(group["matched_chunks"].sum()),
             "chunk_coverage_percent": group["chunk_coverage_percent"].mean(),
-            "Precision@5": group["Precision"].mean(),
-            "MRR@5": group["MRR"].mean(),
-            "MAP@5": group["MAP"].mean(),
-            "nDCG@5": group["nDCG"].mean(),
+            "human_precision": group["Precision"].mean(),
+            "human_mrr": group["MRR"].mean(),
+            "human_map": group["MAP"].mean(),
+            "human_ndcg": group["nDCG"].mean(),
         })
     retrieval_summary_df = pd.DataFrame(retrieval_summary_rows)
     retrieval_summary_output.parent.mkdir(parents=True, exist_ok=True)
@@ -315,10 +306,10 @@ def evaluate_human(
         print(f"  Queries:      {int(row['queries'])}")
         print(f"  Matched chunks: {int(row['matched_chunks'])} / {int(row['queries'] * 5)}")
         print(f"  Chunk coverage: {row['chunk_coverage_percent']:.2f}%")
-        print(f"  Precision@5:  {row['Precision@5']:.4%}")
-        print(f"  MRR@5:        {row['MRR@5']:.4%}")
-        print(f"  MAP@5:        {row['MAP@5']:.4%}")
-        print(f"  nDCG@5:       {row['nDCG@5']:.4%}")
+        print(f"  Human Precision: {row['human_precision']:.4%}")
+        print(f"  Human MRR:       {row['human_mrr']:.4%}")
+        print(f"  Human MAP:       {row['human_map']:.4%}")
+        print(f"  Human nDCG:      {row['human_ndcg']:.4%}")
 
     print("\nHUMAN SEMANTIC GENERATION EVALUATION")
     if generation_summary_df.empty:
