@@ -1,6 +1,7 @@
 """Calculate human retrieval and semantic-generation evaluation results."""
 
 import argparse
+import json
 import math
 import re
 from pathlib import Path
@@ -199,6 +200,7 @@ def evaluate_human(
                     "chunk_text": str(candidate["chunk_text"]),
                     "human_score_mean": sum(judge_scores) / len(judge_scores),
                     "human_score_median": pd.Series(judge_scores).median(),
+                    "judge_scores": json.dumps(judge_scores),
                     "judge_count": len(judge_scores),
                 })
             continue
@@ -244,14 +246,24 @@ def evaluate_human(
     retrieval_rows_by_key = {}
     for (method, query_idx), group in retrieval_df.groupby(["method", "query_idx"]):
         group = group.sort_values("rank")
-        grades = list(group.sort_values("rank")["human_score_median"].fillna(0).astype(int))
-        metrics = retrieval_metrics(grades, k=len(grades), binary_threshold=1)
+        ordered = group.sort_values("rank")
+        score_lists = [json.loads(value) for value in ordered["judge_scores"]]
+        judge_count = max(len(scores) for scores in score_lists)
+        judge_metrics = []
+        for judge_index in range(judge_count):
+            grades = [scores[judge_index] for scores in score_lists if judge_index < len(scores)]
+            judge_metrics.append(retrieval_metrics(grades, k=len(grades), binary_threshold=1))
+        metrics = {
+            key: sum(item[key] for item in judge_metrics) / len(judge_metrics)
+            for key in ("Precision", "MRR", "MAP", "nDCG")
+        }
         retrieval_per_query.append({
             "method": method,
             "query_idx": int(query_idx),
             "query": str(group["query"].iloc[0]),
             "matched_chunks": len(group),
             "chunk_coverage_percent": len(group) / 5 * 100,
+            "judge_count": judge_count,
             **metrics,
         })
         retrieval_rows_by_key[(method, int(query_idx))] = group
