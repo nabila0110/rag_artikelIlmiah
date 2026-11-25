@@ -312,7 +312,23 @@ def evaluate_human(
         generation_summary_output.parent.mkdir(parents=True, exist_ok=True)
         generation_summary_df.to_csv(generation_summary_output, index=False)
 
-    print("\nHUMAN RETRIEVAL EVALUATION")
+    print("\nHUMAN RETRIEVAL RESULTS BY QUERY")
+    for query_idx in sorted(retrieval_query_df["query_idx"].unique()):
+        query_rows = retrieval_query_df[retrieval_query_df["query_idx"] == query_idx]
+        query = str(query_rows["query"].iloc[0])
+        print(f"\nQ{int(query_idx)}: {query}")
+        for _, row in query_rows.sort_values("method").iterrows():
+            print(
+                f"  {row['method'].upper()}: "
+                f"Precision {row['Precision']:.2%}, "
+                f"MRR {row['MRR']:.2%}, "
+                f"MAP {row['MAP']:.2%}, "
+                f"nDCG {row['nDCG']:.2%} "
+                f"({int(row['matched_chunks'])}/5 chunks; "
+                f"{int(row['judge_count'])} respondents)"
+            )
+
+    print("\nHUMAN RETRIEVAL SUMMARY")
     for _, row in retrieval_summary_df.iterrows():
         print(f"\n{row['method'].upper()}")
         print(f"  Queries:      {int(row['queries'])}")
@@ -323,7 +339,22 @@ def evaluate_human(
         print(f"  Human MAP:       {row['human_map']:.4%}")
         print(f"  Human nDCG:      {row['human_ndcg']:.4%}")
 
-    print("\nHUMAN SEMANTIC GENERATION EVALUATION")
+    print("\nHUMAN SEMANTIC GENERATION RESULTS BY QUERY")
+    if generation_df.empty:
+        print("  No generated answers matched the human evaluation file.")
+    else:
+        for _, row in generation_df.sort_values("query_idx").iterrows():
+            result = "Correct" if row["human_correct_binary"] else "Incorrect"
+            print(
+                f"\nQ{int(row['query_idx'])}: {row['query']}\n"
+                f"  Factual result: {result}; "
+                f"quality {row['human_score_mean']:.2f}/2 "
+                f"({int(row['human_correct_judge_count'])}/"
+                f"{int(row['human_total_judge_count'])} respondents rated it "
+                "Tepat or Sangat Tepat)"
+            )
+
+    print("\nHUMAN SEMANTIC GENERATION SUMMARY")
     if generation_summary_df.empty:
         print("  No generated answers matched the human evaluation file.")
     else:
@@ -345,7 +376,7 @@ def evaluate_human(
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--human", type=Path, default=Path("data/Human Evaluation.csv"))
+    parser.add_argument("--human", type=Path, default=Path("data/human_evaluation.csv"))
     parser.add_argument("--semantic-candidates", type=Path, default=Path("data/semantic_candidates.csv"))
     parser.add_argument("--bm25-candidates", type=Path, default=Path("data/bm25_candidates.csv"))
     parser.add_argument("--generation", type=Path, default=Path("data/semantic_nlg_results.csv"))
