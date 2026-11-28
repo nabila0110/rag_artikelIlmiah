@@ -74,7 +74,10 @@ class RetrievalSystem:
                 similarity = self._distance_to_similarity(dist)
 
                 results.append({
-                    'chunk_id': chunk_info.get('chunk_idx', f'chunk_{idx}'),
+                    'chunk_id': chunk_info.get(
+                        'chunk_id',
+                        chunk_info.get('chunk_idx', f'chunk_{idx}')
+                    ),
                     'chunk_text': chunk_info['chunk_text'],
                     'judul': chunk_info['judul'],
                     'author': chunk_info.get('first_author', 'unknown'),

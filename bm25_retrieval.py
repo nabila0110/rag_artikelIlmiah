@@ -36,7 +36,10 @@ class BM25Retriever:
             results.append(
                 {
                     "doc_title": title,
-                    "chunk_id": row.get("chunk_idx", f"chunk_{index}"),
+                    "chunk_id": row.get(
+                        "chunk_id",
+                        row.get("chunk_idx", f"chunk_{index}"),
+                    ),
                     "chunk_text": str(row.get("chunk_text", "")),
                     "author": row.get("first_author", "unknown"),
                     "tahun": row.get("tahun_terbit", "N/A"),

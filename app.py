@@ -8,6 +8,7 @@ import sys #pengganti __init__.py untuk menambah path project root ke sys.path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from config import Config
+from bm25_retrieval import BM25Retriever
 from utils.retrieval import RetrievalSystem
 from utils.generation import GenerationSystem
 
@@ -23,11 +24,12 @@ app.config.from_object(Config)
 CORS(app)
 
 retrieval_system = None
+bm25_retrieval_system = None
 generation_system = None
 systems_initialized = False
 
 def initialize_systems():
-    global retrieval_system, generation_system, systems_initialized
+    global retrieval_system, bm25_retrieval_system, generation_system, systems_initialized
 
     if systems_initialized:
         return
@@ -41,6 +43,8 @@ def initialize_systems():
         model_path=app.config['EMBEDDING_MODEL_PATH']
     )
     logger.info("Retrieval system loaded successfully")
+    bm25_retrieval_system = BM25Retriever(retrieval_system.chunks_df)
+    logger.info("BM25 retrieval system loaded successfully")
 
     logger.info("Pre-loading generation system...")
     generation_system = GenerationSystem(
@@ -78,18 +82,35 @@ def search():
         query = data['query'].strip()
         top_k = min(data.get('top_k', app.config['DEFAULT_TOP_K']), app.config['MAX_TOP_K'])
         generate_answer = data.get('generate_answer', False)
+        retrieval_method = data.get('retrieval_method', 'semantic')
 
         if not query:
             return jsonify({
                 'error': 'Query cannot be empty'
             }), 400
+        if retrieval_method not in ('semantic', 'bm25'):
+            return jsonify({
+                'error': "retrieval_method must be either 'semantic' or 'bm25'"
+            }), 400
         
-        logger.info(f"Search request: query='{query}', top_k={top_k}, generate={generate_answer}")
+        logger.info(
+            "Search request: query='%s', method=%s, top_k=%s, generate=%s",
+            query,
+            retrieval_method,
+            top_k,
+            generate_answer,
+        )
 
-        results = retrieval_system.search(query, top_k=top_k)
+        if retrieval_method == 'bm25':
+            results = bm25_retrieval_system.search(query, top_k=top_k)
+            for result in results:
+                result['judul'] = result.pop('doc_title')
+        else:
+            results = retrieval_system.search(query, top_k=top_k)
 
         response = {
             'query': query,
+            'retrieval_method': retrieval_method,
             'num_results': len(results),
             'results':results
         }
