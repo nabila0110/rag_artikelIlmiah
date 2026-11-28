@@ -304,16 +304,21 @@ def evaluate_human(
             * 100
         )
         quality_per_query = generation_df["human_score_mean"]
+        judge_factual_accuracy = (
+            generation_df["human_correct_judge_count"].sum()
+            / generation_df["human_total_judge_count"].sum()
+        )
+        judge_factual_accuracy_std = judge_accuracy_per_query.std() / 100
         generation_summary_df = pd.DataFrame([{
             "method": "semantic",
             "queries": len(generation_df),
+            "human_factual_accuracy": human_correct.mean(),
+            "human_factual_accuracy_std": human_correct.std(),
             "human_factual_accuracy_percent": human_correct.mean() * 100,
             "human_factual_accuracy_std_percent": human_correct.std() * 100,
-            "human_judge_factual_accuracy_percent": (
-                generation_df["human_correct_judge_count"].sum()
-                / generation_df["human_total_judge_count"].sum()
-                * 100
-            ),
+            "human_judge_factual_accuracy": judge_factual_accuracy,
+            "human_judge_factual_accuracy_std": judge_factual_accuracy_std,
+            "human_judge_factual_accuracy_percent": judge_factual_accuracy * 100,
             "human_judge_factual_accuracy_std_percent": judge_accuracy_per_query.std(),
             "human_quality_score_mean": quality_per_query.mean(),
             "human_quality_score_std": quality_per_query.std(),
@@ -349,12 +354,22 @@ def evaluate_human(
         print(f"  Matched chunks: {int(row['matched_chunks'])} / {int(row['queries'] * 5)}")
         print(f"  Chunk coverage: {row['chunk_coverage_percent']:.2f}%")
         print(
-            f"  Human Precision: {row['human_precision']:.4%} "
-            f"+/- {row['human_precision_std']:.4%}"
+            f"  Human Precision: {row['human_precision']:.4f} +/- "
+            f"{row['human_precision_std']:.4f} "
+            f"({row['human_precision']:.2%} +/- {row['human_precision_std']:.2%})"
         )
-        print(f"  Human MRR:       {row['human_mrr']:.4%} +/- {row['human_mrr_std']:.4%}")
-        print(f"  Human MAP:       {row['human_map']:.4%} +/- {row['human_map_std']:.4%}")
-        print(f"  Human nDCG:      {row['human_ndcg']:.4%} +/- {row['human_ndcg_std']:.4%}")
+        print(
+            f"  Human MRR:       {row['human_mrr']:.4f} +/- {row['human_mrr_std']:.4f} "
+            f"({row['human_mrr']:.2%} +/- {row['human_mrr_std']:.2%})"
+        )
+        print(
+            f"  Human MAP:       {row['human_map']:.4f} +/- {row['human_map_std']:.4f} "
+            f"({row['human_map']:.2%} +/- {row['human_map_std']:.2%})"
+        )
+        print(
+            f"  Human nDCG:      {row['human_ndcg']:.4f} +/- {row['human_ndcg_std']:.4f} "
+            f"({row['human_ndcg']:.2%} +/- {row['human_ndcg_std']:.2%})"
+        )
 
     print("\nHUMAN SEMANTIC GENERATION RESULTS BY QUERY")
     if generation_df.empty:
@@ -378,12 +393,17 @@ def evaluate_human(
         row = generation_summary_df.iloc[0]
         print(f"  Queries:                 {int(row['queries'])}")
         print(
-            f"  Factual accuracy:        {row['human_judge_factual_accuracy_percent']:.2f}% "
-            f"+/- {row['human_judge_factual_accuracy_std_percent']:.2f}%"
+            f"  Factual accuracy:        "
+            f"{row['human_judge_factual_accuracy']:.4f} +/- "
+            f"{row['human_judge_factual_accuracy_std']:.4f} "
+            f"({row['human_judge_factual_accuracy_percent']:.2f}% +/- "
+            f"{row['human_judge_factual_accuracy_std_percent']:.2f}%)"
         )
         print(
-            f"  Query-level accuracy:    {row['human_factual_accuracy_percent']:.2f}% "
-            f"+/- {row['human_factual_accuracy_std_percent']:.2f}%"
+            f"  Query-level accuracy:    {row['human_factual_accuracy']:.4f} +/- "
+            f"{row['human_factual_accuracy_std']:.4f} "
+            f"({row['human_factual_accuracy_percent']:.2f}% +/- "
+            f"{row['human_factual_accuracy_std_percent']:.2f}%)"
         )
         print(
             f"  Mean quality score:      {row['human_quality_score_mean']:.4f} "
