@@ -279,9 +279,13 @@ def evaluate_human(
             "matched_chunks": int(group["matched_chunks"].sum()),
             "chunk_coverage_percent": group["chunk_coverage_percent"].mean(),
             "human_precision": group["Precision"].mean(),
+            "human_precision_std": group["Precision"].std(),
             "human_mrr": group["MRR"].mean(),
+            "human_mrr_std": group["MRR"].std(),
             "human_map": group["MAP"].mean(),
+            "human_map_std": group["MAP"].std(),
             "human_ndcg": group["nDCG"].mean(),
+            "human_ndcg_std": group["nDCG"].std(),
         })
     retrieval_summary_df = pd.DataFrame(retrieval_summary_rows)
     retrieval_summary_output.parent.mkdir(parents=True, exist_ok=True)
@@ -294,17 +298,27 @@ def evaluate_human(
     generation_summary_df = pd.DataFrame()
     if not generation_df.empty:
         human_correct = generation_df["human_correct_binary"]
+        judge_accuracy_per_query = (
+            generation_df["human_correct_judge_count"]
+            / generation_df["human_total_judge_count"]
+            * 100
+        )
+        quality_per_query = generation_df["human_score_mean"]
         generation_summary_df = pd.DataFrame([{
             "method": "semantic",
             "queries": len(generation_df),
             "human_factual_accuracy_percent": human_correct.mean() * 100,
+            "human_factual_accuracy_std_percent": human_correct.std() * 100,
             "human_judge_factual_accuracy_percent": (
                 generation_df["human_correct_judge_count"].sum()
                 / generation_df["human_total_judge_count"].sum()
                 * 100
             ),
-            "human_quality_score_mean": generation_df["human_score_mean"].mean(),
-            "human_quality_score_percent": generation_df["human_score_mean"].mean() / 2 * 100,
+            "human_judge_factual_accuracy_std_percent": judge_accuracy_per_query.std(),
+            "human_quality_score_mean": quality_per_query.mean(),
+            "human_quality_score_std": quality_per_query.std(),
+            "human_quality_score_percent": quality_per_query.mean() / 2 * 100,
+            "human_quality_score_std_percent": quality_per_query.std() / 2 * 100,
             "Tidak Tepat": (generation_df["human_score_median"] == 0).sum(),
             "Tepat": (generation_df["human_score_median"] == 1).sum(),
             "Sangat Tepat": (generation_df["human_score_median"] == 2).sum(),
@@ -334,10 +348,13 @@ def evaluate_human(
         print(f"  Queries:      {int(row['queries'])}")
         print(f"  Matched chunks: {int(row['matched_chunks'])} / {int(row['queries'] * 5)}")
         print(f"  Chunk coverage: {row['chunk_coverage_percent']:.2f}%")
-        print(f"  Human Precision: {row['human_precision']:.4%}")
-        print(f"  Human MRR:       {row['human_mrr']:.4%}")
-        print(f"  Human MAP:       {row['human_map']:.4%}")
-        print(f"  Human nDCG:      {row['human_ndcg']:.4%}")
+        print(
+            f"  Human Precision: {row['human_precision']:.4%} "
+            f"+/- {row['human_precision_std']:.4%}"
+        )
+        print(f"  Human MRR:       {row['human_mrr']:.4%} +/- {row['human_mrr_std']:.4%}")
+        print(f"  Human MAP:       {row['human_map']:.4%} +/- {row['human_map_std']:.4%}")
+        print(f"  Human nDCG:      {row['human_ndcg']:.4%} +/- {row['human_ndcg_std']:.4%}")
 
     print("\nHUMAN SEMANTIC GENERATION RESULTS BY QUERY")
     if generation_df.empty:
@@ -360,10 +377,22 @@ def evaluate_human(
     else:
         row = generation_summary_df.iloc[0]
         print(f"  Queries:                 {int(row['queries'])}")
-        print(f"  Factual accuracy:        {row['human_judge_factual_accuracy_percent']:.2f}%")
-        print(f"  Query-level accuracy:    {row['human_factual_accuracy_percent']:.2f}%")
-        print(f"  Mean quality score:      {row['human_quality_score_mean']:.4f} / 2")
-        print(f"  Quality score:           {row['human_quality_score_percent']:.2f}%")
+        print(
+            f"  Factual accuracy:        {row['human_judge_factual_accuracy_percent']:.2f}% "
+            f"+/- {row['human_judge_factual_accuracy_std_percent']:.2f}%"
+        )
+        print(
+            f"  Query-level accuracy:    {row['human_factual_accuracy_percent']:.2f}% "
+            f"+/- {row['human_factual_accuracy_std_percent']:.2f}%"
+        )
+        print(
+            f"  Mean quality score:      {row['human_quality_score_mean']:.4f} "
+            f"+/- {row['human_quality_score_std']:.4f} / 2"
+        )
+        print(
+            f"  Quality score:           {row['human_quality_score_percent']:.2f}% "
+            f"+/- {row['human_quality_score_std_percent']:.2f}%"
+        )
 
     print(f"\nSaved retrieval details -> {retrieval_output}")
     print(f"Saved retrieval per-query -> {retrieval_output.with_name('human_retrieval_per_query.csv')}")
